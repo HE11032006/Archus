@@ -1,0 +1,12 @@
+.env
+.env.*
+!.env.example
+.venv/
+.venv_win/
+__pycache__/
+*.pyc
+logs/*.jsonl
+.DS_Store
+ArchX/
+.agents/
+
