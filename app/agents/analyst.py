@@ -9,13 +9,16 @@ from typing import Any, Dict, List
 from ..schemas import SharedState
 from ..scoring import evaluate_options
 from ..tracing import Tracer
+from ..world_model import WorldModel
+from .. import world_state
 
 
 class AnalystAgent:
-    def __init__(self, tracer: Tracer):
+    def __init__(self, tracer: Tracer, world: WorldModel):
         self.name = "AnalystAgent"
         self.role = "Architectural Trade-off Analysis & Metric Evaluation"
         self.tracer = tracer
+        self.world = world
 
     def analyze(self, state: SharedState) -> SharedState:
         self.tracer.log(
@@ -90,6 +93,12 @@ class AnalystAgent:
             "source_table": "antipatterns",
             "expected_value": god_classes
         })
+
+        # Publish each claim to the World Model; the Evaluator reads it back from there
+        for claim in claims:
+            claim["claim_id"] = world_state.record_claim(
+                self.world, state.run_id, state.repo, state.module_path, claim, state.revision_count
+            )
 
         state.claims_to_verify = claims
         self.tracer.log(

@@ -6,6 +6,7 @@
 __pycache__/
 *.pyc
 logs/*.jsonl
+data/world_model.db
 .DS_Store
 ArchX/
 .agents/

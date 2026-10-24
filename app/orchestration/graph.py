@@ -7,10 +7,12 @@ from __future__ import annotations
 
 import time
 import uuid
-from typing import Any, Callable, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 from ..config import settings
 from ..schemas import AgentInfo, RunResponse, SharedState, StructuredErrorDetail
 from ..tracing import Tracer
+from ..world_model import WorldModel
+from .. import world_state
 from ..adapters.sample_data import SampleDataAdapter
 from ..adapters.zetaris import ZetarisAdapter, ZetarisConnectionError
 from ..agents.planner import PlannerAgent
@@ -21,10 +23,12 @@ from ..agents.reporter import ReporterAgent
 
 
 class OrchestrationGraph:
-    def __init__(self, force_sample_mode: bool = False):
+    def __init__(self, force_sample_mode: bool = False, world: Optional[WorldModel] = None):
         self.sample_adapter = SampleDataAdapter()
         self.zetaris_adapter = ZetarisAdapter()
         self.force_sample_mode = force_sample_mode
+        # Shared state every agent reads and writes; persists across runs
+        self.world = world if world is not None else WorldModel(db_path=settings.world_model_db)
 
     def _get_executor(self, sample_mode: bool) -> Callable[[str], List[Dict[str, Any]]]:
         if sample_mode or not settings.is_zetaris_configured():
@@ -89,13 +93,14 @@ class OrchestrationGraph:
         )
 
         query_executor = self._get_executor(is_sample)
+        world_state.record_run(self.world, run_id, query, repo, module_path, is_sample)
 
         # Instantiate agents
         planner = PlannerAgent(tracer)
-        retriever = RetrieverAgent(tracer, query_executor)
-        analyst = AnalystAgent(tracer)
-        evaluator = EvidenceEvaluatorAgent(tracer, query_executor)
-        reporter = ReporterAgent(tracer)
+        retriever = RetrieverAgent(tracer, query_executor, self.world)
+        analyst = AnalystAgent(tracer, self.world)
+        evaluator = EvidenceEvaluatorAgent(tracer, query_executor, self.world)
+        reporter = ReporterAgent(tracer, self.world)
 
         agents_registry = [
             AgentInfo(name=planner.name, role=planner.role),
@@ -137,6 +142,10 @@ class OrchestrationGraph:
             if state.final_output and state.final_output.decision == "insufficient_evidence":
                 run_status = "insufficient_evidence"
 
+            world_state.record_outcome(
+                self.world, run_id, run_status, state.final_output.decision if state.final_output else None
+            )
+
             tracer.log(
                 agent="Orchestrator",
                 event="run_completed",
@@ -157,6 +166,10 @@ class OrchestrationGraph:
 
         except Exception as e:
             elapsed_sec = round(time.perf_counter() - start_time, 3)
+            try:
+                world_state.record_outcome(self.world, run_id, "error", None)
+            except Exception:
+                pass
             tracer.log(
                 agent="Orchestrator",
                 event="run_failed",

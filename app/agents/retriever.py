@@ -9,14 +9,17 @@ import time
 from typing import Any, Callable, Dict, List
 from ..schemas import SharedState
 from ..tracing import Tracer
+from ..world_model import WorldModel
+from .. import world_state
 
 
 class RetrieverAgent:
-    def __init__(self, tracer: Tracer, query_executor: Callable[[str], List[Dict[str, Any]]]):
+    def __init__(self, tracer: Tracer, query_executor: Callable[[str], List[Dict[str, Any]]], world: WorldModel):
         self.name = "RetrieverAgent"
         self.role = "Data Access & Query Execution"
         self.tracer = tracer
         self.query_executor = query_executor
+        self.world = world
 
     def retrieve(self, state: SharedState) -> SharedState:
         self.tracer.log(
@@ -44,6 +47,8 @@ class RetrieverAgent:
                     "duration_ms": duration_ms,
                     "status": "success"
                 })
+                world_state.record_query(self.world, self.name, state.run_id, state.repo, state.module_path,
+                                         sql, category, len(rows), "success")
 
                 self.tracer.log(
                     agent=self.name,
@@ -62,6 +67,8 @@ class RetrieverAgent:
                     "error": str(e),
                     "duration_ms": duration_ms
                 })
+                world_state.record_query(self.world, self.name, state.run_id, state.repo, state.module_path,
+                                         sql, category, None, "error")
 
                 self.tracer.log(
                     agent=self.name,

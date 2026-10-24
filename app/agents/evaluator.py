@@ -10,14 +10,17 @@ import time
 from typing import Any, Callable, Dict, List
 from ..schemas import EvidenceItem, SharedState
 from ..tracing import Tracer
+from ..world_model import WorldModel
+from .. import world_state
 
 
 class EvidenceEvaluatorAgent:
-    def __init__(self, tracer: Tracer, query_executor: Callable[[str], List[Dict[str, Any]]]):
+    def __init__(self, tracer: Tracer, query_executor: Callable[[str], List[Dict[str, Any]]], world: WorldModel):
         self.name = "EvidenceEvaluatorAgent"
         self.role = "Veto Authority & Independent Evidence Verification"
         self.tracer = tracer
         self.query_executor = query_executor
+        self.world = world
 
     def evaluate(self, state: SharedState) -> SharedState:
         self.tracer.log(
@@ -46,10 +49,16 @@ class EvidenceEvaluatorAgent:
 
         # Case 2: Independently re-query DataAccess to verify each specific claim
         for claim_info in state.claims_to_verify:
-            metric = claim_info["metric"]
-            source_table = claim_info["source_table"]
-            claim_text = claim_info["claim"]
-            expected = claim_info["expected_value"]
+            # Read the claim from the shared World Model, not from the Analyst's hand-off
+            claim_entity = self.world.get(claim_info["claim_id"])
+            if claim_entity is None:
+                unsupported_claims.append(f"Claim '{claim_info['claim']}' is missing from the World Model.")
+                continue
+            claim_rev = claim_entity["rev"]
+            metric = claim_entity["attrs"]["metric"]
+            source_table = claim_entity["attrs"]["source_table"]
+            claim_text = claim_entity["attrs"]["text"]
+            expected = claim_entity["attrs"]["expected_value"]
 
             # Formulate independent verification query
             if source_table == "modules":
@@ -88,6 +97,14 @@ class EvidenceEvaluatorAgent:
 
                 # Strict check: expected vs verified
                 is_supported = (actual_val is not None) and (str(actual_val) == str(expected))
+
+                verify_query_id = world_state.record_query(
+                    self.world, self.name, state.run_id, state.repo, state.module_path,
+                    verify_sql, "verification", len(rows), "success"
+                )
+                world_state.record_verification(
+                    self.world, state.run_id, claim_entity["id"], claim_rev, verify_query_id, actual_val, is_supported
+                )
 
                 self.tracer.log(
                     agent=self.name,

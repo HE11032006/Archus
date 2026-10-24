@@ -10,13 +10,16 @@ from ..schemas import OptionComparison, RunOutput, SharedState
 from ..scoring import evaluate_options
 from ..llm import llm_client
 from ..tracing import Tracer
+from ..world_model import WorldModel
+from .. import world_state
 
 
 class ReporterAgent:
-    def __init__(self, tracer: Tracer):
+    def __init__(self, tracer: Tracer, world: WorldModel):
         self.name = "ReporterAgent"
         self.role = "Formal Decision Record Synthesis & Action Plan Generation"
         self.tracer = tracer
+        self.world = world
 
     def report(self, state: SharedState) -> SharedState:
         self.tracer.log(
@@ -118,6 +121,16 @@ class ReporterAgent:
             if polished and len(polished.strip()) > 20:
                 summary = polished.strip()
 
+        # Link every evidence item to its claim, cited queries and verifying query in the World Model
+        lineage = world_state.run_lineage(self.world, state.run_id) or {"claims": []}
+        lineage_by_metric = {c["metric"]: c for c in lineage["claims"]}
+        for item in state.verified_evidence:
+            entry = lineage_by_metric.get(item.metric)
+            if entry:
+                item.claim_id = entry["claim_id"]
+                item.cited_query_ids = entry["cites"]
+                item.verified_by_query_id = entry["verified_by"]
+
         output = RunOutput(
             decision=decision,
             confidence=confidence,
@@ -125,7 +138,12 @@ class ReporterAgent:
             evidence=state.verified_evidence,
             missing_data=state.missing_evidence,
             action_plan=action_plan,
-            summary=summary
+            summary=summary,
+            world_model={
+                "run_entity": world_state.run_id_of(state.run_id),
+                "claims": len(lineage["claims"]),
+                "lineage_endpoint": f"/world/runs/{state.run_id}",
+            },
         )
 
         state.final_output = output

@@ -49,6 +49,11 @@ class Settings(BaseModel):
     logs_dir: Path = ROOT_DIR / "logs"
     data_dir: Path = ROOT_DIR / "data"
 
+    # World Model (shared agent state, append-only SQLite event log)
+    world_model_db: Path = Field(
+        default_factory=lambda: Path(os.environ.get("WORLD_MODEL_DB", str(ROOT_DIR / "data" / "world_model.db")))
+    )
+
     def is_zetaris_configured(self) -> bool:
         return bool(self.zetaris_rest_url and self.zetaris_org_id and self.zetaris_api_key)
 

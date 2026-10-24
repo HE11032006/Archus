@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import settings
 from app.orchestration.graph import OrchestrationGraph
 from app.schemas import RunRequest, RunResponse
+from app.world_state import run_lineage
 
 app = FastAPI(
     title="Archus Multi-Agent Architecture Decision Service",
@@ -64,6 +65,34 @@ def run_endpoint(request: RunRequest):
         pass
 
     return response
+
+
+@app.get("/world/stats")
+def world_stats():
+    """World Model health: schema version, record counts, orphans, audit length."""
+    return graph.world.stats()
+
+
+@app.get("/world/runs/{run_id}")
+def world_run_lineage(run_id: str):
+    """Every claim a run asserted, the queries it was drawn from and the query that verified it."""
+    lineage = run_lineage(graph.world, run_id)
+    if lineage is None:
+        raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found in the World Model")
+    return lineage
+
+
+@app.get("/world/entities/{entity_id:path}")
+def world_entity(entity_id: str):
+    """One World Model entity with its open outgoing and incoming edges."""
+    entity = graph.world.get(entity_id)
+    if entity is None:
+        raise HTTPException(status_code=404, detail=f"Entity '{entity_id}' not found in the World Model")
+    return {
+        "entity": entity,
+        "edges_out": graph.world.edges_of(entity_id, direction="out"),
+        "edges_in": graph.world.edges_of(entity_id, direction="in"),
+    }
 
 
 def cli_main():
@@ -125,6 +154,8 @@ def cli_main():
             print(f"VERIFIED EVIDENCE ITEMS: {len(result.output.evidence)}")
             for idx, ev in enumerate(result.output.evidence, 1):
                 print(f"  [{idx}] {ev.claim} (Table: {ev.source_table}, Verified: {ev.verified})")
+                if ev.claim_id:
+                    print(f"      World Model: {ev.claim_id} <- verified by {ev.verified_by_query_id}")
             if result.output.action_plan:
                 print("ACTION PLAN:")
                 for step in result.output.action_plan:

@@ -74,6 +74,27 @@ Feedback Loop  │     ┌──────────────────
 
 ---
 
+## 4b. Meterless Engine: World Model (shared agent state)
+
+Archus implements the [Meterless World Model](https://github.com/Meterless/Meterless/tree/main/engines/world-model) as the state its agents share. The Analyst writes each claim to the World Model; the Evaluator reads the claim back from there, re-queries the data, and records its verdict on the same entity without erasing the Analyst's fields.
+
+| Spec property | Where in Archus |
+|---|---|
+| Stable, content-derived IDs (`type:system:id`, `ent_<sha256>`) | `app/world_model.py`, `app/world_state.py` |
+| Provenance on every write (agent + timestamp + run) | `WorldModel.upsert_entity` / `relate` reject writes without a source |
+| Append-only event log, views rebuilt by replay | SQLite `data/world_model.db` (`WORLD_MODEL_DB`), `WorldModel._replay` |
+| Field-level merge + optimistic revision check | Evaluator writes with `expected_rev`; a stale write raises `ConflictError` |
+| Bitemporal edges | A new `verified_by` edge closes the previous one, so verification history stays queryable |
+| Ordered audit | `WorldModel.audit()` |
+
+Graph per run: `run -executed-> query`, `run -asserts-> claim`, `claim -cites-> query` (retrieval), `claim -verified_by-> query` (independent re-query), `claim -about-> module`. Each evidence item in `POST /run` carries `claim_id`, `cited_query_ids` and `verified_by_query_id`.
+
+Read endpoints: `GET /world/runs/{run_id}` (lineage of every claim), `GET /world/entities/{id}`, `GET /world/stats`.
+
+Tests: `python -m unittest discover -s tests -v` runs the official conformance checks ported to Python (stable IDs, merge bands, provenance, idempotent ingest, bitemporal edges, audit order), concurrent-writer and stale-writer tests, restart-by-replay, and the full pipeline in Sample Mode. `scripts/judge_check.py` runs them as step 9.
+
+---
+
 ## 5. Technology Stack & Sponsors
 
 | Layer | Component | Description |
@@ -120,7 +141,7 @@ Judges can execute and evaluate Archus **without any external API keys or active
 # Force Sample Mode via CLI
 python run.py --sample --query "Should we refactor the accounts module?" --repo django_app --module accounts
 
-# Or run the automated 8-step verification suite
+# Or run the automated 9-step verification suite
 python scripts/judge_check.py
 ```
 

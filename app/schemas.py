@@ -35,6 +35,9 @@ class EvidenceItem(BaseModel):
     value: Any = Field(..., description="Actual value retrieved")
     threshold: Optional[Any] = Field(None, description="Standard threshold applied from rules table")
     verified: bool = Field(False, description="True if verified independently by the EvidenceEvaluator")
+    claim_id: Optional[str] = Field(None, description="World Model entity holding this claim")
+    cited_query_ids: List[str] = Field(default_factory=list, description="World Model queries the claim was drawn from")
+    verified_by_query_id: Optional[str] = Field(None, description="World Model query that independently verified the claim")
 
 
 class OptionComparison(BaseModel):
@@ -58,6 +61,7 @@ class RunOutput(BaseModel):
     missing_data: List[str] = Field(default_factory=list)
     action_plan: List[str] = Field(default_factory=list)
     summary: str
+    world_model: Optional[Dict[str, Any]] = Field(None, description="Pointer to this run's lineage in the World Model")
 
 
 class StructuredErrorDetail(BaseModel):
