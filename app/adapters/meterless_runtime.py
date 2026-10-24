@@ -37,6 +37,13 @@ DETECT_PORTS = (8088, 8090, 8787, 11434)
 _KNOWN_SUFFIXES = ("/v1/chat/completions", "/v1/models", "/healthz", "/v1")
 
 
+def strip_reasoning(text: Optional[str]) -> Optional[str]:
+    """Drop a reasoning model's thinking (<think>...</think>, or everything before a lone </think>)."""
+    if not text or "</think>" not in text:
+        return text
+    return text.rsplit("</think>", 1)[1].strip() or None
+
+
 class MeterlessTokenError(ValueError):
     """Raised when a token is missing or is the rejected placeholder."""
 
@@ -333,5 +340,5 @@ class MeterlessRuntimeProvider:
         )
         served = getattr(response, "model", None)
         if response.choices:
-            return response.choices[0].message.content, served
+            return strip_reasoning(response.choices[0].message.content), served
         return None, served

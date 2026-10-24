@@ -195,6 +195,14 @@ class ChatTests(IsolatedProviderTest):
         with self.assertRaises(MeterlessTokenError):
             self.provider.chat_completion([{"role": "user", "content": "hi"}])
 
+    def test_reasoning_text_is_stripped_from_replies(self):
+        from app.adapters.meterless_runtime import strip_reasoning
+        self.assertEqual(strip_reasoning("The user wants one sentence.</think>Connection confirmed."), "Connection confirmed.")
+        self.assertEqual(strip_reasoning("<think>plan\nmore</think>\n\nFinal answer."), "Final answer.")
+        self.assertEqual(strip_reasoning("No thinking here."), "No thinking here.")
+        self.assertIsNone(strip_reasoning("only thinking</think>   "))
+        self.assertIsNone(strip_reasoning(None))
+
     def test_timeout_is_180_seconds(self):
         self.assertEqual(self.provider.timeout, 180)
 
