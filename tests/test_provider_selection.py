@@ -31,7 +31,8 @@ class ProviderSelectionTest(unittest.TestCase):
         tmp = tempfile.TemporaryDirectory()
         self.addCleanup(tmp.cleanup)
         for name, value in (("llm_provider", ""), ("meterless_runtime_token", ""),
-                            ("meterless_state_dir", ""), ("meterless_base_url", "")):
+                            ("meterless_state_dir", ""), ("meterless_base_url", ""),
+                            ("meterless_model", "meterless/auto")):
             patcher = mock.patch.object(settings, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
@@ -57,8 +58,9 @@ class ProviderSelectionTest(unittest.TestCase):
         self.runtime.set_token(token)
         return state
 
-    def run_accounts(self, provider=None):
-        return self.graph.execute_run("Should we refactor or maintain accounts?", "django_app", "accounts", True, provider)
+    def run_accounts(self, provider=None, model=None):
+        return self.graph.execute_run("Should we refactor or maintain accounts?", "django_app", "accounts", True,
+                                      provider, model)
 
     def test_meterless_is_the_default_provider(self):
         self.assertEqual(self.client.provider_id, "meterless")
@@ -117,6 +119,47 @@ class ProviderSelectionTest(unittest.TestCase):
             res = self.run_accounts(provider="openai_compatible")
         self.assertEqual(res.output.model_provider["provider"], "openai_compatible")
         self.assertFalse(res.output.model_provider["fallback"])
+
+
+    def test_saved_routing_mode_is_used_by_runs(self):
+        stub = self.connect_stub()
+        self.runtime.set_model("meterless/deep")
+        res = self.run_accounts()
+        self.assertEqual(res.output.model_provider["model_requested"], "meterless/deep")
+        chat = [r for r in stub.requests if r["path"] == "/v1/chat/completions"][-1]
+        self.assertEqual(chat["body"]["model"], "meterless/deep")
+
+    def test_per_run_model_overrides_the_saved_mode(self):
+        stub = self.connect_stub()
+        self.runtime.set_model("meterless/deep")
+        res = self.run_accounts(model="meterless/fast")
+        self.assertEqual(res.output.model_provider["model_requested"], "meterless/fast")
+        self.assertEqual(self.runtime.model, "meterless/deep")  # the saved mode is left alone
+        chat = [r for r in stub.requests if r["path"] == "/v1/chat/completions"][-1]
+        self.assertEqual(chat["body"]["model"], "meterless/fast")
+
+    def test_post_run_accepts_options_model_and_rejects_non_meterless(self):
+        from fastapi.testclient import TestClient
+        import run as run_module
+        self.connect_stub()
+        payload = {"input": {"query": "Should we migrate legacy billing?", "repo": "legacy_service",
+                             "module_path": "billing"},
+                   "options": {"sample_mode": True, "provider": "meterless", "model": "meterless/cheap"}}
+        with mock.patch.object(run_module, "graph", self.graph):
+            client = TestClient(run_module.app)
+            ok = client.post("/run", json=payload).json()
+            payload["options"]["model"] = "gpt-4o"
+            bad = client.post("/run", json=payload)
+        self.assertEqual(ok["output"]["decision"], "migrate")
+        self.assertEqual(ok["output"]["model_provider"]["model_requested"], "meterless/cheap")
+        self.assertEqual(bad.status_code, 422)
+
+    def test_settings_api_stays_read_only(self):
+        from fastapi.testclient import TestClient
+        import run as run_module
+        client = TestClient(run_module.app)
+        for path in ("/providers", "/providers/meterless/status"):
+            self.assertEqual(client.post(path, json={"model": "meterless/deep"}).status_code, 405)
 
 
 if __name__ == "__main__":

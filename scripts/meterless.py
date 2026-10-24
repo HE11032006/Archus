@@ -6,6 +6,7 @@ meterless.py: Connect Archus to the Meterless Runtime provider.
   python scripts/meterless.py connect [URL]     # a base URL in any form, or a connect link (asked hidden when omitted)
   python scripts/meterless.py token             # paste the token (hidden input; or pipe it with --stdin)
   python scripts/meterless.py models            # routing modes served by the runtime
+  python scripts/meterless.py mode [ID]         # show or save the routing mode (e.g. meterless/deep)
   python scripts/meterless.py chat "Say hello"  # plain text request on meterless/auto (or --model)
 
 The token and connect-link key are stored in data/provider_settings.json (gitignored) and never printed.
@@ -23,7 +24,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from app.adapters.meterless_runtime import (  # noqa: E402
-    DEFAULT_MODEL,
+    MeterlessModeError,
     MeterlessRuntimeProvider,
     MeterlessTokenError,
     TOKEN_KEY,
@@ -68,9 +69,11 @@ def main() -> int:
     p_token = sub.add_parser("token")
     p_token.add_argument("--stdin", action="store_true", help="read the token from stdin instead of a prompt")
     sub.add_parser("models")
+    p_mode = sub.add_parser("mode")
+    p_mode.add_argument("mode", nargs="?", help="routing mode to save, e.g. meterless/deep (omit to show)")
     p_chat = sub.add_parser("chat")
     p_chat.add_argument("text")
-    p_chat.add_argument("--model", default=DEFAULT_MODEL)
+    p_chat.add_argument("--model", default=None, help="routing mode for this message (default: the saved mode)")
     args = parser.parse_args()
     global NO_PROMPT
     NO_PROMPT = args.no_prompt
@@ -116,13 +119,28 @@ def main() -> int:
         show({"base_url": provider.base_url, "models": provider.list_models()})
         return 0
 
-    if args.command == "chat":
+    if args.command == "mode":
+        if not args.mode:
+            show({"model": provider.model})
+            return 0
         try:
-            reply = provider.chat_completion([{"role": "user", "content": args.text}], model=args.model)
-        except MeterlessTokenError as e:
+            result = provider.set_model(args.mode)
+        except MeterlessModeError as e:
             print(e)
             return 1
-        print(f"[{args.model}] {type(reply).__name__}: {reply}")
+        show(result)
+        if result["offered_by_runtime"] is False:
+            print("Saved, but the runtime doesn't list this mode right now; it may route it anyway.")
+        return 0
+
+    if args.command == "chat":
+        model = args.model or provider.model
+        try:
+            reply = provider.chat_completion([{"role": "user", "content": args.text}], model=model)
+        except (MeterlessTokenError, MeterlessModeError) as e:
+            print(e)
+            return 1
+        print(f"[{model}] {type(reply).__name__}: {reply}")
         return 0 if isinstance(reply, str) else 1
 
     return 1

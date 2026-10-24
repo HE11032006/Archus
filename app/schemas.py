@@ -26,6 +26,10 @@ class RunOptions(BaseModel):
     provider: Optional[ProviderId] = Field(
         None, description="Model provider for this run: meterless (default), openai_compatible or none (rules only)"
     )
+    model: Optional[str] = Field(
+        None, pattern=r"^meterless/[A-Za-z0-9][A-Za-z0-9._-]*$",
+        description="Meterless routing mode for this run (e.g. meterless/deep); default: the saved mode, else meterless/auto"
+    )
 
 
 class RunRequest(BaseModel):
@@ -102,6 +106,7 @@ class SharedState(BaseModel):
     module_path: Optional[str] = None
     sample_mode: bool = False
     llm_provider: Optional[str] = None
+    llm_model: Optional[str] = None
 
     # Agent step tracking
     current_step: str = "init"

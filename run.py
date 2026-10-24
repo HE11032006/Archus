@@ -76,13 +76,15 @@ def run_endpoint(request: RunRequest):
     """
     sample_mode = request.options.sample_mode if request.options else None
     provider = request.options.provider if request.options else None
+    model = request.options.model if request.options else None
 
     response = graph.execute_run(
         query=request.input.query,
         repo=request.input.repo,
         module_path=request.input.module_path,
         sample_mode=sample_mode,
-        provider=provider
+        provider=provider,
+        model=model
     )
 
     if response.status == "error":
@@ -133,9 +135,18 @@ def cli_main():
     parser.add_argument("--json", action="store_true", help="Print raw JSON response to stdout")
     parser.add_argument("--provider", choices=["meterless", "openai_compatible", "none"], default=None,
                         help="Model provider for this run (default: LLM_PROVIDER, else meterless)")
+    parser.add_argument("--model", default=None,
+                        help="Meterless routing mode for this run, e.g. meterless/deep (default: saved mode, else meterless/auto)")
     parser.add_argument("--serve", action="store_true", help="Start the FastAPI server instead of single run")
     parser.add_argument("--port", type=int, default=settings.port, help="Port to bind server")
     args = parser.parse_args()
+    if args.model:
+        from app.adapters.meterless_runtime import MeterlessModeError, validate_mode
+        try:
+            validate_mode(args.model)
+        except MeterlessModeError as e:
+            print(f"Error: {e}", file=sys.stderr)
+            sys.exit(2)
 
     if args.serve or (len(sys.argv) == 1 and not args.input):
         print(f"Starting Archus Server on {settings.host}:{args.port}...")
@@ -168,7 +179,8 @@ def cli_main():
             repo=repo,
             module_path=module_path,
             sample_mode=sample_mode,
-            provider=args.provider
+            provider=args.provider,
+            model=args.model
         )
 
         if args.json:

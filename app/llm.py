@@ -51,7 +51,7 @@ class LLMClient:
         return bool(self.resolve(provider_id))
 
     def _model_for(self, provider_id: str) -> str:
-        return settings.meterless_model if provider_id == "meterless" else settings.model_name
+        return self.runtime.model if provider_id == "meterless" else settings.model_name
 
     def generate_with_meta(
         self,

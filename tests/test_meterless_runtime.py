@@ -20,7 +20,9 @@ sys.path.insert(0, str(ROOT / "tests"))
 
 from app.adapters.meterless_runtime import (  # noqa: E402
     APP_ID,
+    MODEL_KEY,
     TOKEN_KEY,
+    MeterlessModeError,
     MeterlessRuntimeProvider,
     MeterlessTokenError,
     SettingsStore,
@@ -43,8 +45,9 @@ class IsolatedProviderTest(unittest.TestCase):
     def setUp(self):
         self.tmp = tempfile.TemporaryDirectory()
         self.addCleanup(self.tmp.cleanup)
-        for name in ("meterless_runtime_token", "meterless_state_dir", "meterless_base_url"):
-            patcher = mock.patch.object(settings, name, "")
+        for name, value in (("meterless_runtime_token", ""), ("meterless_state_dir", ""),
+                            ("meterless_base_url", ""), ("meterless_model", "meterless/auto")):
+            patcher = mock.patch.object(settings, name, value)
             patcher.start()
             self.addCleanup(patcher.stop)
         self.store = SettingsStore(Path(self.tmp.name) / "provider_settings.json")
@@ -194,6 +197,53 @@ class ChatTests(IsolatedProviderTest):
 
     def test_timeout_is_180_seconds(self):
         self.assertEqual(self.provider.timeout, 180)
+
+
+class RoutingModeTests(IsolatedProviderTest):
+    def test_default_mode_is_meterless_auto_and_env_overrides_it(self):
+        self.assertEqual(self.provider.model, "meterless/auto")
+        with mock.patch.object(settings, "meterless_model", "meterless/fast"):
+            self.assertEqual(self.provider.model, "meterless/fast")
+
+    def test_saved_mode_wins_over_env_and_shows_in_status(self):
+        base_url, _ = self.stub(token="tok")
+        self.provider.set_base_url(base_url)
+        self.provider.set_token("tok")
+        result = self.provider.set_model("meterless/deep")
+        self.assertEqual(self.store.get(MODEL_KEY), "meterless/deep")
+        self.assertTrue(result["offered_by_runtime"])
+        with mock.patch.object(settings, "meterless_model", "meterless/fast"):
+            self.assertEqual(self.provider.model, "meterless/deep")
+        self.assertEqual(self.provider.status()["model"], "meterless/deep")
+
+    def test_unknown_meterless_mode_is_accepted_but_flagged(self):
+        base_url, _ = self.stub(token="tok")
+        self.provider.set_base_url(base_url)
+        self.provider.set_token("tok")
+        result = self.provider.set_model("meterless/brand-new.deep")
+        self.assertEqual(self.store.get(MODEL_KEY), "meterless/brand-new.deep")
+        self.assertFalse(result["offered_by_runtime"])
+
+    def test_mode_can_be_saved_while_runtime_is_offline(self):
+        self.provider.set_base_url(f"http://127.0.0.1:{free_port()}")
+        result = self.provider.set_model("meterless/cheap")
+        self.assertIsNone(result["offered_by_runtime"])
+        self.assertEqual(result["runtime_status"], "offline")
+
+    def test_non_meterless_ids_are_rejected(self):
+        for bad in ("gpt-4o", "nvidia/nemotron", "meterless/", "meterless", "meterless/ deep", ""):
+            with self.subTest(mode=bad):
+                with self.assertRaises(MeterlessModeError):
+                    self.provider.set_model(bad)
+        self.assertIsNone(self.store.get(MODEL_KEY))
+
+    def test_chat_uses_the_saved_mode(self):
+        base_url, state = self.stub(token="tok")
+        self.provider.set_base_url(base_url)
+        self.provider.set_token("tok")
+        self.provider.set_model("meterless/text.fast")
+        self.provider.chat_completion([{"role": "user", "content": "hi"}])
+        self.assertEqual(state.requests[-1]["body"]["model"], "meterless/text.fast")
 
 
 if __name__ == "__main__":

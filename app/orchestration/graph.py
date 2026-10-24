@@ -57,7 +57,8 @@ class OrchestrationGraph:
         repo: str = "django_app",
         module_path: str | None = None,
         sample_mode: bool | None = None,
-        provider: str | None = None
+        provider: str | None = None,
+        model: str | None = None
     ) -> RunResponse:
         start_time = time.perf_counter()
 
@@ -78,6 +79,7 @@ class OrchestrationGraph:
             module_path=module_path,
             sample_mode=is_sample,
             llm_provider=provider,
+            llm_model=model,
             max_revisions=settings.max_revision_cycles
         )
 
@@ -91,7 +93,8 @@ class OrchestrationGraph:
                 "query": query,
                 "repo": repo,
                 "module": module_path,
-                "llm_provider": provider or "default"
+                "llm_provider": provider or "default",
+                "llm_model": model or "default"
             }
         )
 

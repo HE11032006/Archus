@@ -120,7 +120,9 @@ class ReporterAgent:
                 f"Verified evidence: {[e.model_dump() for e in state.verified_evidence]}\n"
                 "Write a 2-sentence executive summary for the Tech Lead explaining WHY this decision is justified."
             )
-            polished, provider_record = llm_client.generate_with_meta(llm_prompt, provider_id=state.llm_provider)
+            polished, provider_record = llm_client.generate_with_meta(
+                llm_prompt, provider_id=state.llm_provider, model=state.llm_model
+            )
             if polished and len(polished.strip()) > 20:
                 summary = polished.strip()
             else:

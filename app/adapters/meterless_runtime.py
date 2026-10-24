@@ -25,6 +25,7 @@ DEFAULT_BASE_URL = "http://127.0.0.1:8088/v1"
 APP_ID = "archus"  # stable lowercase id sent as meterless-app
 TOKEN_KEY = "meterless_runtime_token"
 BASE_URL_KEY = "meterless_runtime_base_url"
+MODEL_KEY = "meterless_runtime_model"
 PLACEHOLDER_TOKEN = "rt-local"
 DEFAULT_MODEL = "meterless/auto"
 DISPOSITIONS = ("auto", "fast", "deep", "cheap", "local", "fusion")
@@ -38,6 +39,24 @@ _KNOWN_SUFFIXES = ("/v1/chat/completions", "/v1/models", "/healthz", "/v1")
 
 class MeterlessTokenError(ValueError):
     """Raised when a token is missing or is the rejected placeholder."""
+
+
+class MeterlessModeError(ValueError):
+    """Raised when a routing mode is not a meterless/* id."""
+
+
+ROUTING_MODE_PATTERN = r"^meterless/[A-Za-z0-9][A-Za-z0-9._-]*$"
+
+
+def validate_mode(mode: Optional[str]) -> str:
+    """Routing modes are meterless/<disposition>, meterless/<class> or meterless/<class>.<disposition>."""
+    mode = (mode or "").strip()
+    if not re.match(ROUTING_MODE_PATTERN, mode):
+        raise MeterlessModeError(
+            f"'{mode}' is not a Meterless routing mode. Use meterless/<disposition> "
+            f"({', '.join(DISPOSITIONS)}), meterless/<class> or meterless/<class>.<disposition>."
+        )
+    return mode
 
 
 # ==========================================
@@ -141,8 +160,22 @@ class MeterlessRuntimeProvider:
 
     def __init__(self, store: Optional[SettingsStore] = None, model: Optional[str] = None):
         self.store = store or SettingsStore()
-        self.model = model or settings.meterless_model or DEFAULT_MODEL
+        self._model_override = model
         self.timeout = REQUEST_TIMEOUT_SECONDS
+
+    @property
+    def model(self) -> str:
+        """Routing mode: saved meterless_runtime_model, else METERLESS_MODEL, else meterless/auto."""
+        return self._model_override or self.store.get(MODEL_KEY) or settings.meterless_model or DEFAULT_MODEL
+
+    def set_model(self, mode: str) -> Dict[str, Any]:
+        """Save the routing mode. Accepted when it is a meterless/* id, even if the runtime doesn't list it
+        (yet); the result says whether the runtime currently offers it (None when it can't be asked)."""
+        mode = validate_mode(mode)
+        self.store.set(MODEL_KEY, mode)
+        probe = self.probe()
+        offered = (mode in probe["models"]) if probe["status"] == "online" else None
+        return {"model": mode, "offered_by_runtime": offered, "runtime_status": probe["status"]}
 
     def __repr__(self) -> str:  # never expose the token
         return f"MeterlessRuntimeProvider(base_url={self.base_url!r}, token={'set' if self.token else 'missing'})"
@@ -222,6 +255,7 @@ class MeterlessRuntimeProvider:
     def status(self) -> Dict[str, Any]:
         result = self.probe()
         result["token"] = "set" if self.token else "missing"
+        result["model"] = self.model
         return result
 
     def list_models(self) -> List[str]:

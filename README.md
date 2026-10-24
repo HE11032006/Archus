@@ -222,7 +222,7 @@ Meterless Runtime is Archus's **primary model provider**. Providers (`app/llm.py
 
 | Provider id | Name | Configured by |
 |---|---|---|
-| `meterless` (default) | Meterless Runtime (local Nightshift, contract v4) | `scripts/meterless.py`, saved in `data/provider_settings.json` (gitignored); routing mode `METERLESS_MODEL` (default `meterless/auto`) |
+| `meterless` (default) | Meterless Runtime (local Nightshift, contract v4) | `scripts/meterless.py`, saved in `data/provider_settings.json` (gitignored) |
 | `openai_compatible` | Any OpenAI-compatible endpoint (e.g. NVIDIA) | `MODEL_BASE_URL`, `MODEL_API_KEY`, `NEMOTRON_MODEL` |
 | `none` | No model call: the deterministic rules text | nothing |
 
@@ -233,8 +233,18 @@ python scripts/meterless.py detect            # Auto Detect: 127.0.0.1, localhos
 python scripts/meterless.py connect           # paste a base URL (any form) or a connect link /connect#k=<key>, typed hidden
 python scripts/meterless.py token             # paste the token from the runtime Console (hidden input)
 python scripts/meterless.py status            # online / unauthorized / offline
+python scripts/meterless.py models            # routing modes the runtime offers
+python scripts/meterless.py mode meterless/deep   # save the routing mode (no argument: show it)
 python scripts/meterless.py chat "Say hello"  # plain text request on meterless/auto
 ```
+
+| Setting | Saved by | Key in `data/provider_settings.json` | `.env` fallback | Per run |
+|---|---|---|---|---|
+| Base URL | `detect`, `connect` | `meterless_runtime_base_url` | `METERLESS_BASE_URL` | – |
+| Token | `token` (hidden input), `connect` with a connect link | `meterless_runtime_token` | `METERLESS_RUNTIME_TOKEN`, then `<METERLESS_STATE_DIR>/proxy-token` | – |
+| Routing mode | `mode <id>` | `meterless_runtime_model` | `METERLESS_MODEL` (default `meterless/auto`) | `"options": {"model": "meterless/deep"}` or `run.py --model` |
+
+A routing mode must be a `meterless/*` id; one the runtime doesn't list (yet) is still accepted, and `mode` says whether the runtime currently offers it.
 
 - Pasted URLs are normalised to `<host>/v1` (`/v1`, `/v1/models`, `/v1/chat/completions`, `/healthz`, no scheme: all accepted; never `/v1/v1`).
 - Every call sends `Authorization: Bearer <token>` and `meterless-app: archus`; chat also sends `meterless-scope: user`. The token is stored under `meterless_runtime_token`, or read from `<METERLESS_STATE_DIR>/proxy-token`. The placeholder `rt-local` is rejected. Tokens and connect-link keys are never printed or logged.
