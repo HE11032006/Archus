@@ -1,0 +1,10 @@
+{
+  "input": {
+    "query": "Should we rewrite or maintain the legacy billing service?",
+    "repo": "legacy_service",
+    "module_path": "billing"
+  },
+  "options": {
+    "sample_mode": true
+  }
+}

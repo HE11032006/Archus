@@ -1,0 +1,10 @@
+{
+  "input": {
+    "query": "Can we conclude on migrating the undocumented mystery module?",
+    "repo": "sparse_repo",
+    "module_path": "unmeasured_module"
+  },
+  "options": {
+    "sample_mode": true
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "input": {
+    "query": "Should we refactor or maintain the accounts module in django_app?",
+    "repo": "django_app",
+    "module_path": "accounts"
+  },
+  "options": {
+    "sample_mode": true
+  }
+}
