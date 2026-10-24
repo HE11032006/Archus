@@ -1,5 +1,5 @@
 """
-judge_check.py: Automated 9-step verification suite for judges and pre-submission audit.
+judge_check.py: Automated 10-step verification suite for judges and pre-submission audit.
 Runs completely cross-platform (Windows & Linux).
 """
 
@@ -22,7 +22,7 @@ def run_checks():
     print("=" * 60)
 
     # Step 1: Required Files Check
-    print("\n[Step 1/9] Verifying essential project structure...")
+    print("\n[Step 1/10] Verifying essential project structure...")
     required_paths = [
         "run.py",
         "README.md",
@@ -49,7 +49,7 @@ def run_checks():
     print("  PASS: All essential files and directories present.")
 
     # Step 2: SQLGuard Security Constraints
-    print("\n[Step 2/9] Testing SQLGuard query validation and bounds...")
+    print("\n[Step 2/10] Testing SQLGuard query validation and bounds...")
     try:
         # Should allow clean SELECT on allowed table
         safe_sql = validate_and_sanitize_sql("SELECT * FROM modules WHERE repo_id = 'test'")
@@ -76,44 +76,47 @@ def run_checks():
         sys.exit(1)
 
     # Step 3: Run Orchestration - Case 1: Refactor
-    print("\n[Step 3/9] Testing Run Case 1 (Django Accounts -> Expected REFACTOR)...")
+    print("\n[Step 3/10] Testing Run Case 1 (Django Accounts -> Expected REFACTOR)...")
     graph = OrchestrationGraph(force_sample_mode=True)
     res1 = graph.execute_run(
         query="Should we refactor or maintain accounts?",
         repo="django_app",
         module_path="accounts",
-        sample_mode=True
+        sample_mode=True,
+        provider="none"
     )
     assert res1.status == "success" and res1.output and res1.output.decision == "refactor"
     assert len(res1.output.evidence) >= 3
     print(f"  PASS: Refactor decision verified (Confidence: {res1.output.confidence * 100:.0f}%).")
 
     # Step 4: Run Orchestration - Case 2: Migrate
-    print("\n[Step 4/9] Testing Run Case 2 (Legacy Billing -> Expected MIGRATE)...")
+    print("\n[Step 4/10] Testing Run Case 2 (Legacy Billing -> Expected MIGRATE)...")
     res2 = graph.execute_run(
         query="Should we migrate legacy billing?",
         repo="legacy_service",
         module_path="billing",
-        sample_mode=True
+        sample_mode=True,
+        provider="none"
     )
     assert res2.status == "success" and res2.output and res2.output.decision == "migrate"
     assert any(ev.metric == "god_class_count" for ev in res2.output.evidence)
     print(f"  PASS: Migrate decision verified (Confidence: {res2.output.confidence * 100:.0f}%).")
 
     # Step 5: Run Orchestration - Case 3: Abstention
-    print("\n[Step 5/9] Testing Run Case 3 (Missing Data -> Expected INSUFFICIENT_EVIDENCE / Abstain)...")
+    print("\n[Step 5/10] Testing Run Case 3 (Missing Data -> Expected INSUFFICIENT_EVIDENCE / Abstain)...")
     res3 = graph.execute_run(
         query="Can we conclude on mystery module?",
         repo="sparse_repo",
         module_path="unmeasured_module",
-        sample_mode=True
+        sample_mode=True,
+        provider="none"
     )
     assert res3.status == "insufficient_evidence"
     assert res3.output and res3.output.decision == "insufficient_evidence"
     print("  PASS: Abstention correctly triggered upon missing evidentiary backing.")
 
     # Step 6: Log Traces Integrity Check
-    print("\n[Step 6/9] Verifying real-time JSONL trace files...")
+    print("\n[Step 6/10] Verifying real-time JSONL trace files...")
     logs_dir = ROOT / "logs"
     log_files = list(logs_dir.glob("run_*.jsonl"))
     assert len(log_files) > 0, "No log files found in logs/"
@@ -124,7 +127,7 @@ def run_checks():
     print(f"  PASS: JSONL traces verified in {latest_log.name} with full agent telemetry.")
 
     # Step 7: Secrets Check in Tracked Files
-    print("\n[Step 7/9] Scanning for accidentally committed API keys...")
+    print("\n[Step 7/10] Scanning for accidentally committed API keys...")
     suspicious_patterns = [
         re.compile(r"nvapi-[A-Za-z0-9_-]{20,}"),
         re.compile(r"sk-[A-Za-z0-9_-]{20,}"),
@@ -139,12 +142,12 @@ def run_checks():
     print("  PASS: No secret keys found in application source code.")
 
     # Step 8: Sample Mode Zero-Credential Verification
-    print("\n[Step 8/9] Zero-credential execution verification...")
+    print("\n[Step 8/10] Zero-credential execution verification...")
     # Verified by force_sample_mode=True with local SQLite metrics
     print("  PASS: Mode sample functions deterministically without external credentials.")
 
     # Step 9: Meterless World Model (shared agent state)
-    print("\n[Step 9/9] Running World Model conformance and shared-state tests...")
+    print("\n[Step 9/10] Running World Model conformance and shared-state tests...")
     import unittest
     suite = unittest.defaultTestLoader.discover(str(ROOT / "tests"), pattern="test_world_model.py")
     with open(os.devnull, "w") as devnull, contextlib.redirect_stdout(devnull):
@@ -158,8 +161,23 @@ def run_checks():
     assert all(ev.claim_id and ev.verified_by_query_id for ev in res1.output.evidence)
     print(f"  PASS: {result.testsRun} World Model tests green; run {res1.run_id} lineage at {lineage.get('lineage_endpoint')}.")
 
+    # Step 10: Meterless Runtime, the primary model provider (contract v4, against the local stub)
+    print("\n[Step 10/10] Running Meterless Runtime provider contract and selection tests...")
+    from app.llm import llm_client
+    suite = unittest.TestSuite()
+    for pattern in ("test_meterless_runtime.py", "test_provider_selection.py"):
+        suite.addTests(unittest.defaultTestLoader.discover(str(ROOT / "tests"), pattern=pattern))
+    with open(os.devnull, "w") as devnull, contextlib.redirect_stdout(devnull):
+        result = unittest.TextTestRunner(stream=devnull, verbosity=0).run(suite)
+    if not result.wasSuccessful():
+        print(f"FAILED: Meterless provider tests: {len(result.failures)} failure(s), {len(result.errors)} error(s).")
+        for test, trace in result.failures + result.errors:
+            print(f"  - {test}: {trace.strip().splitlines()[-1]}")
+        sys.exit(1)
+    print(f"  PASS: {result.testsRun} provider tests green; default provider is '{llm_client.provider_id}'.")
+
     print("\n" + "=" * 60)
-    print("ALL 9 VERIFICATION CHECKS PASSED SUCCESSFULLY (READY FOR JUDGING)")
+    print("ALL 10 VERIFICATION CHECKS PASSED SUCCESSFULLY (READY FOR JUDGING)")
     print("=" * 60 + "\n")
 
 if __name__ == "__main__":

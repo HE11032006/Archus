@@ -15,6 +15,7 @@ from app.config import settings
 from app.orchestration.graph import OrchestrationGraph
 from app.schemas import RunRequest, RunResponse
 from app.world_state import run_lineage
+from app.llm import llm_client
 
 app = FastAPI(
     title="Archus Multi-Agent Architecture Decision Service",
@@ -42,7 +43,29 @@ def health_check():
         "sample_mode_enabled": settings.sample_mode_env or not settings.is_zetaris_configured(),
         "zetaris_configured": settings.is_zetaris_configured(),
         "meterless_configured": settings.is_model_configured(),
+        "llm_provider": llm_client.provider_id,
     }
+
+
+@app.get("/providers")
+def list_providers():
+    """Model providers and which one Archus uses. Read-only: connect with scripts/meterless.py."""
+    runtime = llm_client.providers["meterless"]
+    return {
+        "active": llm_client.provider_id,
+        "providers": [
+            {"id": runtime.id, "name": runtime.name, **runtime.status()},
+            {"id": "openai_compatible", "name": "OpenAI-compatible (MODEL_BASE_URL)",
+             "base_url": settings.model_base_url, "model": settings.model_name,
+             "configured": settings.is_model_configured()},
+        ],
+    }
+
+
+@app.get("/providers/meterless/status")
+def meterless_status():
+    """online, unauthorized (paste the token with scripts/meterless.py token) or offline."""
+    return llm_client.providers["meterless"].status()
 
 
 @app.post("/run", response_model=RunResponse)
@@ -52,12 +75,14 @@ def run_endpoint(request: RunRequest):
     Takes a query + repo context, coordinates agents, and returns a verified decision record.
     """
     sample_mode = request.options.sample_mode if request.options else None
+    provider = request.options.provider if request.options else None
 
     response = graph.execute_run(
         query=request.input.query,
         repo=request.input.repo,
         module_path=request.input.module_path,
-        sample_mode=sample_mode
+        sample_mode=sample_mode,
+        provider=provider
     )
 
     if response.status == "error":
@@ -106,6 +131,8 @@ def cli_main():
     parser.add_argument("--module", "-m", type=str, default="accounts", help="Module path to analyze")
     parser.add_argument("--sample", action="store_true", help="Force sample mode (SQLite local)")
     parser.add_argument("--json", action="store_true", help="Print raw JSON response to stdout")
+    parser.add_argument("--provider", choices=["meterless", "openai_compatible", "none"], default=None,
+                        help="Model provider for this run (default: LLM_PROVIDER, else meterless)")
     parser.add_argument("--serve", action="store_true", help="Start the FastAPI server instead of single run")
     parser.add_argument("--port", type=int, default=settings.port, help="Port to bind server")
     args = parser.parse_args()
@@ -140,7 +167,8 @@ def cli_main():
             query=query,
             repo=repo,
             module_path=module_path,
-            sample_mode=sample_mode
+            sample_mode=sample_mode,
+            provider=args.provider
         )
 
         if args.json:
@@ -151,6 +179,12 @@ def cli_main():
         if result.output:
             print(f"DECISION: {result.output.decision.upper()} (Confidence: {result.output.confidence * 100:.0f}%)")
             print(f"SUMMARY: {result.output.summary}")
+            mp = result.output.model_provider or {}
+            if mp.get("provider") == "rules":
+                print(f"WRITTEN BY: rules (selected provider '{mp.get('selected')}' did not answer)")
+            else:
+                print(f"WRITTEN BY: {mp.get('provider')} | {mp.get('model_requested')} -> {mp.get('model_served')}"
+                      + (" (fallback)" if mp.get("fallback") else ""))
             print(f"VERIFIED EVIDENCE ITEMS: {len(result.output.evidence)}")
             for idx, ev in enumerate(result.output.evidence, 1):
                 print(f"  [{idx}] {ev.claim} (Table: {ev.source_table}, Verified: {ev.verified})")

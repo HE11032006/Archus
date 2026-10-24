@@ -178,7 +178,7 @@ class ArchusIntegrationTests(unittest.TestCase):
 
     def test_every_evidence_item_links_to_its_claim_and_verifying_query(self):
         from app.world_state import run_lineage
-        res = self.graph.execute_run("Should we refactor or maintain accounts?", "django_app", "accounts", True)
+        res = self.graph.execute_run("Should we refactor or maintain accounts?", "django_app", "accounts", True, "none")
         self.assertEqual(res.output.decision, "refactor")
         self.assertGreaterEqual(len(res.output.evidence), 3)
         for item in res.output.evidence:
@@ -197,8 +197,8 @@ class ArchusIntegrationTests(unittest.TestCase):
         self.assertTrue(all(c["status"] == "verified" for c in lineage["claims"]))
 
     def test_claims_keep_stable_ids_across_runs(self):
-        first = self.graph.execute_run("Should we migrate legacy billing?", "legacy_service", "billing", True)
-        second = self.graph.execute_run("Should we migrate legacy billing?", "legacy_service", "billing", True)
+        first = self.graph.execute_run("Should we migrate legacy billing?", "legacy_service", "billing", True, "none")
+        second = self.graph.execute_run("Should we migrate legacy billing?", "legacy_service", "billing", True, "none")
         self.assertEqual(first.output.decision, "migrate")
         self.assertEqual(
             sorted(e.claim_id for e in first.output.evidence),
@@ -212,7 +212,7 @@ class ArchusIntegrationTests(unittest.TestCase):
 
     def test_abstention_is_recorded_without_verified_claims(self):
         from app.world_state import run_lineage
-        res = self.graph.execute_run("Can we conclude on mystery module?", "sparse_repo", "unmeasured_module", True)
+        res = self.graph.execute_run("Can we conclude on mystery module?", "sparse_repo", "unmeasured_module", True, "none")
         self.assertEqual(res.status, "insufficient_evidence")
         lineage = run_lineage(self.world, res.run_id)
         self.assertEqual(lineage["status"], "insufficient_evidence")

@@ -18,8 +18,14 @@ class RunInput(BaseModel):
     module_path: Optional[str] = Field(None, description="Specific module directory path to analyze")
 
 
+ProviderId = Literal["meterless", "openai_compatible", "none"]
+
+
 class RunOptions(BaseModel):
     sample_mode: Optional[bool] = Field(None, description="Force sample mode (SQLite local) without external credentials")
+    provider: Optional[ProviderId] = Field(
+        None, description="Model provider for this run: meterless (default), openai_compatible or none (rules only)"
+    )
 
 
 class RunRequest(BaseModel):
@@ -62,6 +68,9 @@ class RunOutput(BaseModel):
     action_plan: List[str] = Field(default_factory=list)
     summary: str
     world_model: Optional[Dict[str, Any]] = Field(None, description="Pointer to this run's lineage in the World Model")
+    model_provider: Optional[Dict[str, Any]] = Field(
+        None, description="Which provider and routing mode wrote the summary, the model served, and any fallback"
+    )
 
 
 class StructuredErrorDetail(BaseModel):
@@ -92,6 +101,7 @@ class SharedState(BaseModel):
     repo: str
     module_path: Optional[str] = None
     sample_mode: bool = False
+    llm_provider: Optional[str] = None
 
     # Agent step tracking
     current_step: str = "init"

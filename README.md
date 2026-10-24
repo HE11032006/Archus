@@ -216,6 +216,35 @@ curl -X POST http://localhost:8000/run \
 
 ---
 
+## 8b. Model Provider: Meterless Runtime
+
+Meterless Runtime is Archus's **primary model provider**. Providers (`app/llm.py`):
+
+| Provider id | Name | Configured by |
+|---|---|---|
+| `meterless` (default) | Meterless Runtime (local Nightshift, contract v4) | `scripts/meterless.py`, saved in `data/provider_settings.json` (gitignored); routing mode `METERLESS_MODEL` (default `meterless/auto`) |
+| `openai_compatible` | Any OpenAI-compatible endpoint (e.g. NVIDIA) | `MODEL_BASE_URL`, `MODEL_API_KEY`, `NEMOTRON_MODEL` |
+| `none` | No model call: the deterministic rules text | nothing |
+
+Choose per run with `"options": {"provider": "meterless"}` on `POST /run` or `python run.py --provider meterless`; the default is `LLM_PROVIDER`, else `meterless`. If the selected provider is unavailable or fails, the other one is tried, then the rules. Only the ReporterAgent's summary wording uses a model: decisions and evidence are always computed and verified from data, so they never change with the provider. Each response carries `output.model_provider` (provider, routing mode requested, model served, fallback, attempts), also logged as the `llm_call` trace event.
+
+```bash
+python scripts/meterless.py detect            # Auto Detect: 127.0.0.1, localhost, [::1] x 8088, 8090, 8787, 11434
+python scripts/meterless.py connect           # paste a base URL (any form) or a connect link /connect#k=<key>, typed hidden
+python scripts/meterless.py token             # paste the token from the runtime Console (hidden input)
+python scripts/meterless.py status            # online / unauthorized / offline
+python scripts/meterless.py chat "Say hello"  # plain text request on meterless/auto
+```
+
+- Pasted URLs are normalised to `<host>/v1` (`/v1`, `/v1/models`, `/v1/chat/completions`, `/healthz`, no scheme: all accepted; never `/v1/v1`).
+- Every call sends `Authorization: Bearer <token>` and `meterless-app: archus`; chat also sends `meterless-scope: user`. The token is stored under `meterless_runtime_token`, or read from `<METERLESS_STATE_DIR>/proxy-token`. The placeholder `rt-local` is rejected. Tokens and connect-link keys are never printed or logged.
+- Status comes from `GET /v1/models`: 401/403 = `unauthorized` (paste the token), 200 with `meterless/*` ids = `online`, anything else = `offline`. Unknown `meterless/*` routing modes are kept.
+- Requests use a 180 s timeout (a cold model load can take minutes).
+- Read-only API: `GET /providers`, `GET /providers/meterless/status`. Connecting is CLI-only, so a client on the network can't repoint Archus and capture the token.
+- Tests: `python -m unittest tests.test_meterless_runtime -v`, against `tests/meterless_stub.py`, a local stand-in that enforces the contract.
+
+---
+
 ## 9. Failure & Fallback Handling
 
 | Scenario | Behavior |

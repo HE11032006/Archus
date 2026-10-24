@@ -109,17 +109,23 @@ class ReporterAgent:
         }
         _, _, comparisons, _ = evaluate_options(metrics_summary)
 
-        # Optional LLM polish if model is reachable
-        if not state.sample_mode and llm_client.meterless.is_available():
+        # LLM polish through the selected provider (Meterless Runtime first). The decision and the
+        # evidence never depend on it: only the wording of the summary does, and the rules text stays
+        # when no provider answers.
+        provider_record = {"selected": state.llm_provider or llm_client.provider_id, "provider": "rules"}
+        if llm_client.is_available(state.llm_provider):
             llm_prompt = (
                 f"Question: {state.query}\n"
                 f"Decision: {decision}\n"
                 f"Verified evidence: {[e.model_dump() for e in state.verified_evidence]}\n"
                 "Write a 2-sentence executive summary for the Tech Lead explaining WHY this decision is justified."
             )
-            polished = llm_client.generate(llm_prompt)
+            polished, provider_record = llm_client.generate_with_meta(llm_prompt, provider_id=state.llm_provider)
             if polished and len(polished.strip()) > 20:
                 summary = polished.strip()
+            else:
+                provider_record["provider"] = "rules"
+        self.tracer.log(agent=self.name, event="llm_call", payload=provider_record)
 
         # Link every evidence item to its claim, cited queries and verifying query in the World Model
         lineage = world_state.run_lineage(self.world, state.run_id) or {"claims": []}
@@ -139,6 +145,7 @@ class ReporterAgent:
             missing_data=state.missing_evidence,
             action_plan=action_plan,
             summary=summary,
+            model_provider=provider_record,
             world_model={
                 "run_entity": world_state.run_id_of(state.run_id),
                 "claims": len(lineage["claims"]),

@@ -38,6 +38,20 @@ class Settings(BaseModel):
     model_api_key: str = Field(default_factory=lambda: os.environ.get("MODEL_API_KEY", ""))
     model_name: str = Field(default_factory=lambda: os.environ.get("NEMOTRON_MODEL", "meterless/auto"))
 
+    # Provider selection: "meterless" (Meterless Runtime, the primary provider), "openai_compatible"
+    # (MODEL_* above) or "none" (rules only). Empty = meterless. A run can override it (options.provider).
+    llm_provider: str = Field(default_factory=lambda: os.environ.get("LLM_PROVIDER", "").strip().lower())
+
+    # Meterless Runtime provider (contract v4). Base URL and token are normally saved by
+    # scripts/meterless.py into provider_settings_file; these env vars are fallbacks.
+    meterless_base_url: str = Field(default_factory=lambda: os.environ.get("METERLESS_BASE_URL", ""))
+    meterless_runtime_token: str = Field(default_factory=lambda: os.environ.get("METERLESS_RUNTIME_TOKEN", ""))
+    meterless_state_dir: str = Field(default_factory=lambda: os.environ.get("METERLESS_STATE_DIR", ""))
+    meterless_model: str = Field(default_factory=lambda: os.environ.get("METERLESS_MODEL", "meterless/auto"))
+    provider_settings_file: Path = Field(
+        default_factory=lambda: Path(os.environ.get("PROVIDER_SETTINGS_FILE", str(ROOT_DIR / "data" / "provider_settings.json")))
+    )
+
     # Safety, Timeouts & Limits
     sql_timeout_seconds: int = Field(default_factory=lambda: int(os.environ.get("SOURCE_TIMEOUT_SECONDS", "15")))
     model_timeout_seconds: int = Field(default_factory=lambda: int(os.environ.get("MODEL_TIMEOUT_SECONDS", "60")))
