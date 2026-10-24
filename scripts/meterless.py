@@ -23,6 +23,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from openai import APIConnectionError, APIStatusError  # noqa: E402
+
 from app.adapters.meterless_runtime import (  # noqa: E402
     MeterlessModeError,
     MeterlessRuntimeProvider,
@@ -139,6 +141,18 @@ def main() -> int:
             reply = provider.chat_completion([{"role": "user", "content": args.text}], model=model)
         except (MeterlessTokenError, MeterlessModeError) as e:
             print(e)
+            return 1
+        except APIStatusError as e:
+            body = e.body if isinstance(e.body, dict) else {}
+            error = body.get("error", body) if isinstance(body.get("error", body), dict) else {}
+            detail = error.get("meterless_detail") or error.get("message") or str(e)
+            print(f"[{model}] the runtime answered HTTP {e.status_code}: {detail}")
+            if "nvidia_401" in str(detail):
+                print("NVIDIA refused the NVIDIA API key saved in Nightshift (Setup > Providers > NVIDIA). "
+                      "Paste a valid key from build.nvidia.com (it starts with nvapi-) and save.")
+            return 1
+        except APIConnectionError:
+            print(f"[{model}] could not reach {provider.base_url}. Is Nightshift running?")
             return 1
         print(f"[{model}] {type(reply).__name__}: {reply}")
         return 0 if isinstance(reply, str) else 1
