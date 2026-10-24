@@ -1,0 +1,80 @@
+{
+  "run_id": "e19dffe1",
+  "status": "insufficient_evidence",
+  "output": {
+    "decision": "insufficient_evidence",
+    "confidence": 0.2,
+    "options_compared": [
+      {
+        "option": "maintain",
+        "score": 10.0,
+        "pros": [
+          "Zero immediate engineering cost"
+        ],
+        "cons": [
+          "Unknown hidden risks due to unmeasured codebase"
+        ],
+        "rationale": "Cannot recommend without foundational metrics."
+      },
+      {
+        "option": "refactor",
+        "score": 10.0,
+        "pros": [
+          "Targeted improvements possible"
+        ],
+        "cons": [
+          "No regression safety harness (tests unknown)"
+        ],
+        "rationale": "Refactoring without metrics or test coverage carries unacceptable risk."
+      },
+      {
+        "option": "migrate",
+        "score": 10.0,
+        "pros": [
+          "Clean slate"
+        ],
+        "cons": [
+          "High investment with unquantified ROI"
+        ],
+        "rationale": "Migration cannot be justified without documented structural failure."
+      }
+    ],
+    "evidence": [],
+    "missing_data": [
+      "Module code complexity and size metrics are missing from catalog.",
+      "Test coverage data is absent."
+    ],
+    "action_plan": [
+      "Instrument the codebase with automated test coverage runners (pytest-cov).",
+      "Execute the ArchX collector on the local source to generate missing module metrics.",
+      "Populate the metrics database and re-evaluate with verified data."
+    ],
+    "summary": "Abstention on repository 'sparse_repo' (module: 'unmeasured_module'). The agent refuses to conclude because mandatory baseline metrics (such as unit test coverage, cyclomatic complexity, or dependency catalogs) are unverified or absent from the data store. Recommended action: run complete static and dynamic analysis before committing to an architectural decision."
+  },
+  "error": null,
+  "agents": [
+    {
+      "name": "PlannerAgent",
+      "role": "Query Decomposition and Metric Retrieval Planning"
+    },
+    {
+      "name": "RetrieverAgent",
+      "role": "Data Access & Query Execution"
+    },
+    {
+      "name": "AnalystAgent",
+      "role": "Architectural Trade-off Analysis & Metric Evaluation"
+    },
+    {
+      "name": "EvidenceEvaluatorAgent",
+      "role": "Veto Authority & Independent Evidence Verification"
+    },
+    {
+      "name": "ReporterAgent",
+      "role": "Formal Decision Record Synthesis & Action Plan Generation"
+    }
+  ],
+  "trace_id": "trace-057f5d67-b21c-468c-afaa-bbed33984d41",
+  "log_file": "H:\\hackgen\\archus\\logs\\run_e19dffe1.jsonl",
+  "execution_time_seconds": 0.044
+}

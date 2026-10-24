@@ -1,0 +1,118 @@
+{
+  "run_id": "a9c5ff54",
+  "status": "success",
+  "output": {
+    "decision": "migrate",
+    "confidence": 0.82,
+    "options_compared": [
+      {
+        "option": "maintain",
+        "score": 5.0,
+        "pros": [
+          "Zero migration risk",
+          "Existing business logic remains untouched"
+        ],
+        "cons": [
+          "Accumulates technical debt if complexity increases"
+        ],
+        "rationale": "Current max complexity is 48.0 with 90 bug fixes recorded."
+      },
+      {
+        "option": "refactor",
+        "score": 5.0,
+        "pros": [
+          "Preserves existing integrations",
+          "Leverages existing test coverage"
+        ],
+        "cons": [
+          "Requires targeted code restructuring effort"
+        ],
+        "rationale": "Test coverage is 0.0% with coupling score of 9.4."
+      },
+      {
+        "option": "migrate",
+        "score": 95.0,
+        "pros": [
+          "Eliminates architectural debt",
+          "Allows modern framework adoption"
+        ],
+        "cons": [
+          "High development and QA cost",
+          "Risk of regression on edge cases"
+        ],
+        "rationale": "God classes detected: 1, coupling score: 9.4."
+      }
+    ],
+    "evidence": [
+      {
+        "claim": "Maximum cyclomatic complexity is 48.0",
+        "metric": "complexity_max",
+        "source_table": "modules",
+        "sql_query": "SELECT complexity_max FROM modules WHERE repo_id = 'legacy_service' AND module_path = 'billing' LIMIT 1",
+        "value": 48.0,
+        "threshold": null,
+        "verified": true
+      },
+      {
+        "claim": "Test coverage estimate is 0.0%",
+        "metric": "coverage_estimate",
+        "source_table": "tests",
+        "sql_query": "SELECT coverage_estimate FROM tests WHERE repo_id = 'legacy_service' AND module_path = 'billing' LIMIT 1",
+        "value": 0.0,
+        "threshold": null,
+        "verified": true
+      },
+      {
+        "claim": "Module coupling score is 9.4",
+        "metric": "coupling_score",
+        "source_table": "modules",
+        "sql_query": "SELECT coupling_score FROM modules WHERE repo_id = 'legacy_service' AND module_path = 'billing' LIMIT 1",
+        "value": 9.4,
+        "threshold": null,
+        "verified": true
+      },
+      {
+        "claim": "Detected 1 God Class antipattern(s)",
+        "metric": "god_class_count",
+        "source_table": "antipatterns",
+        "sql_query": "SELECT count(*) as count FROM antipatterns WHERE repo_id = 'legacy_service' AND pattern = 'god_class' AND module_path = 'billing' LIMIT 1",
+        "value": 1,
+        "threshold": null,
+        "verified": true
+      }
+    ],
+    "missing_data": [],
+    "action_plan": [
+      "Define boundary interfaces around the legacy module to prevent further coupling.",
+      "Construct end-to-end black-box characterization tests to capture current behavior.",
+      "Incrementally migrate capabilities using the Strangler Fig pattern."
+    ],
+    "summary": "Decision: MIGRATE for module 'billing'. The module presents severe architectural debt, multiple God Classes, critical coupling, and insufficient test harnesses. Incremental refactoring carries high regression risk; a strangler-fig migration to a modern service or rewrite is recommended."
+  },
+  "error": null,
+  "agents": [
+    {
+      "name": "PlannerAgent",
+      "role": "Query Decomposition and Metric Retrieval Planning"
+    },
+    {
+      "name": "RetrieverAgent",
+      "role": "Data Access & Query Execution"
+    },
+    {
+      "name": "AnalystAgent",
+      "role": "Architectural Trade-off Analysis & Metric Evaluation"
+    },
+    {
+      "name": "EvidenceEvaluatorAgent",
+      "role": "Veto Authority & Independent Evidence Verification"
+    },
+    {
+      "name": "ReporterAgent",
+      "role": "Formal Decision Record Synthesis & Action Plan Generation"
+    }
+  ],
+  "trace_id": "trace-1edbee6a-4ed0-48f3-9811-a85ea73bd114",
+  "log_file": "H:\\hackgen\\archus\\logs\\run_a9c5ff54.jsonl",
+  "execution_time_seconds": 0.061
+}
