@@ -1,0 +1,23 @@
+# Store every text file with LF line endings in the repository, whatever the
+# machine or terminal (Git for Windows, WSL, Linux, macOS) used to commit it.
+# Editors and Git for Windows may still show CRLF in the working copy.
+* text=auto eol=lf
+
+# Windows-only scripts keep CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+# Binary files: never convert
+*.db binary
+*.sqlite binary
+*.ico binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.ttf binary
+*.glb binary
