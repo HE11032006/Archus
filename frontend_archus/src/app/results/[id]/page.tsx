@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { useParams } from "next/navigation";
 import {
   CheckCircle,
@@ -99,6 +99,15 @@ function formatMetricValue(value: unknown) {
 }
 
 export default function ResultsPage() {
+  // useParams() must sit under <Suspense> so Next.js 16 can prerender this route
+  return (
+    <Suspense fallback={null}>
+      <ResultsContent />
+    </Suspense>
+  );
+}
+
+function ResultsContent() {
   const { id } = useParams<{ id: string }>();
   const [result, setResult] = useState<RunResponse | null>(null);
   const [notFound, setNotFound] = useState(false);
