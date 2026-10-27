@@ -37,6 +37,19 @@ class RunRequest(BaseModel):
     options: Optional[RunOptions] = Field(default_factory=RunOptions)
 
 
+class AskArchitectRequest(BaseModel):
+    repo: str = Field(..., description="Target repository or repo_id")
+    question: str = Field(..., description="Follow-up question for the Architect Agent")
+    decision: Optional[str] = None
+    run_id: Optional[str] = None
+
+
+class AskArchitectResponse(BaseModel):
+    answer: str
+    repo: str
+    provider: Optional[str] = None
+
+
 class EvidenceItem(BaseModel):
     claim: str = Field(..., description="Specific claim made in analysis")
     metric: str = Field(..., description="Name of the metric (e.g. cyclomatic_complexity_max, god_class_count)")
@@ -71,6 +84,13 @@ class RunOutput(BaseModel):
     missing_data: List[str] = Field(default_factory=list)
     action_plan: List[str] = Field(default_factory=list)
     summary: str
+    detailed_explanation: Optional[str] = Field(None, description="In-depth multi-section architectural report from the AI agent")
+    architecture_style: Optional[str] = Field(None, description="Detected architectural style/pattern (e.g. Django MVT, Clean Architecture, etc.)")
+    repo_metadata: Optional[Dict[str, Any]] = Field(None, description="High-level repository stats: files, functions, classes, LOC, language")
+    metrics_overview: Optional[Dict[str, Any]] = Field(None, description="Summary of complexity, coupling, cohesion, coverage")
+    antipatterns: Optional[List[Dict[str, Any]]] = Field(default_factory=list, description="Detected architectural smells and anti-patterns")
+    complexity_hotspots: Optional[List[Dict[str, Any]]] = Field(default_factory=list, description="Top files with highest cyclomatic complexity")
+    refactoring_recipes: Optional[List[Dict[str, Any]]] = Field(default_factory=list, description="Concrete step-by-step technical blueprints")
     world_model: Optional[Dict[str, Any]] = Field(None, description="Pointer to this run's lineage in the World Model")
     model_provider: Optional[Dict[str, Any]] = Field(
         None, description="Which provider and routing mode wrote the summary, the model served, and any fallback"
@@ -126,5 +146,6 @@ class SharedState(BaseModel):
     evaluator_status: Literal["approved", "needs_revision", "abstain"] = "needs_revision"
     
     missing_evidence: List[str] = Field(default_factory=list)
+    repo_analysis: Optional[Dict[str, Any]] = None
     final_output: Optional[RunOutput] = None
     error: Optional[StructuredErrorDetail] = None
