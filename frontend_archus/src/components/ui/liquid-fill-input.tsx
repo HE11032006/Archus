@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { startTransition } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -29,8 +30,10 @@ export function LiquidFillInput({
     ).matches;
     const target = focused ? 65 : 100;
     if (prefersReduced) {
-      setClipPath(
-        `polygon(0% 100%,100% 100%,100% ${target}%,0% ${target}%)`
+      startTransition(() =>
+        setClipPath(
+          `polygon(0% 100%,100% 100%,100% ${target}%,0% ${target}%)`
+        )
       );
       return;
     }
