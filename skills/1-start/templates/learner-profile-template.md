@@ -55,7 +55,7 @@ Help they requested or friction grounded in their reported background or observe
      `markdown` = review in the terminal.
      `html` = also create a visual HTML planning companion with meaningful diagrams
      and structured interactive reveals. Markdown stays canonical.
-     Applies to scope, PRD, and spec only—never create an HTML build checklist. -->
+     Applies to scope, PRD, and spec only never create an HTML build checklist. -->
 
 not established
 
