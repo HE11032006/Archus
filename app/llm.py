@@ -19,6 +19,14 @@ from .config import settings
 
 PROVIDER_IDS = ("meterless", "openai_compatible", "none")
 PRIMARY_PROVIDER = "meterless"
+ENGLISH_ONLY = (
+    "Write exclusively in English. Never use French or any other language. "
+    "All headings, verdicts, rationales, and recommendations must be in English."
+)
+DEFAULT_SYSTEM_PROMPT = (
+    "You are an expert software architect providing verifiable code decision analysis. "
+    + ENGLISH_ONLY
+)
 
 
 class LLMClient:
@@ -56,7 +64,7 @@ class LLMClient:
     def generate_with_meta(
         self,
         prompt: str,
-        system_prompt: str = "You are an expert software architect providing verifiable code decision analysis.",
+        system_prompt: str = DEFAULT_SYSTEM_PROMPT,
         provider_id: Optional[str] = None,
         model: Optional[str] = None,
     ) -> Tuple[Optional[str], Dict[str, Any]]:
@@ -64,8 +72,8 @@ class LLMClient:
         selected = provider_id or self.provider_id
         meta: Dict[str, Any] = {"selected": selected, "attempts": []}
         messages: List[Dict[str, str]] = [
-            {"role": "system", "content": system_prompt},
-            {"role": "user", "content": prompt},
+            {"role": "system", "content": f"{system_prompt}\n\n{ENGLISH_ONLY}"},
+            {"role": "user", "content": f"{prompt}\n\n{ENGLISH_ONLY}"},
         ]
         for pid in self.resolve(selected):
             requested = model if (model and pid == "meterless") else self._model_for(pid)
@@ -90,7 +98,7 @@ class LLMClient:
     def generate(
         self,
         prompt: str,
-        system_prompt: str = "You are an expert software architect providing verifiable code decision analysis.",
+        system_prompt: str = DEFAULT_SYSTEM_PROMPT,
         force_local: bool = False,
         provider_id: Optional[str] = None,
     ) -> Optional[str]:

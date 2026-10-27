@@ -297,7 +297,7 @@ function ResultsContent() {
   }, [id]);
 
   if (notFound) {
-    // Redirect to home — no direct access without a valid run
+    // Redirect to home no direct access without a valid run
     router.replace("/");
     return null;
   }

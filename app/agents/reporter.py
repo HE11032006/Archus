@@ -147,6 +147,7 @@ class ReporterAgent:
                 f"- Anti-Patterns Found: {len(anti_list)} (God Classes: {god_classes})\n"
                 f"- Complexity Hotspot Files: {[h.get('file') for h in hotspots[:3]]}\n"
                 f"Verified SQL Evidence: {evidence_summary}\n\n"
+                "Write the entire report in English only. Do not use French or any other language.\n"
                 "Please provide a comprehensive, authoritative Software Architecture Report with the following structured sections:\n"
                 "### 1. Executive Verdict & Core Architecture Diagnostics\n"
                 "Explain the primary technical rationale for this decision.\n\n"
@@ -162,7 +163,11 @@ class ReporterAgent:
 
             polished_text, provider_record = llm_client.generate_with_meta(
                 llm_prompt,
-                system_prompt="You are Archus, an elite software architect producing deep, verifiable architecture decision records for engineering leadership.",
+                system_prompt=(
+                    "You are Archus, an elite software architect producing deep, verifiable architecture "
+                    "decision records for engineering leadership. Write exclusively in English. "
+                    "Never use French or any other language."
+                ),
                 provider_id=state.llm_provider,
                 model=state.llm_model,
             )

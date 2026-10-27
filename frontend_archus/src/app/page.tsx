@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Search, AlertCircle } from "lucide-react";
 
 import { SiteFooter } from "@/components/site-footer";
@@ -11,7 +10,6 @@ import Faq05 from "@/components/ui/faq-05";
 import { LiquidFillInput } from "@/components/ui/liquid-fill-input";
 
 export default function HomePage() {
-  const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
   const [validationError, setValidationError] = useState<string | null>(null);
 
@@ -50,7 +48,14 @@ export default function HomePage() {
       return;
     }
     setValidationError(null);
-    router.push(`/analyze?repo=${encodeURIComponent(searchQuery.trim())}`);
+    const next = `/analyze?repo=${encodeURIComponent(searchQuery.trim())}`;
+    if (typeof document !== "undefined") {
+      (document.activeElement as HTMLElement | null)?.blur();
+    }
+    // Delay so the Enter key that submitted the form cannot activate the header "home" link.
+    window.setTimeout(() => {
+      window.location.assign(next);
+    }, 200);
   };
 
   return (
@@ -64,7 +69,7 @@ export default function HomePage() {
             <p className="landing-hero-sub">
               A new perspective on architecture for the agentic era.
               <br />
-              Evidence-backed decisions — Maintain, Refactor, or Migrate.
+              Evidence-backed decisions | Maintain, Refactor, or Migrate.
             </p>
 
             <form

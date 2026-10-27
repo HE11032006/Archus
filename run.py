@@ -133,13 +133,17 @@ def ask_architect(req: AskArchitectRequest):
         f"{context}\n"
         f"User Question: {req.question}\n\n"
         "As an expert Senior Software Architect, provide a clear, technical, practical, and highly actionable response "
-        "with concrete architectural recommendations and code/structure advice."
+        "with concrete architectural recommendations and code/structure advice. "
+        "Answer entirely in English."
     )
 
     if llm_client.is_available():
         reply, meta = llm_client.generate_with_meta(
             prompt,
-            system_prompt="You are Archus, an expert software architecture consulting agent assisting engineering teams.",
+            system_prompt=(
+                "You are Archus, an expert software architecture consulting agent assisting engineering teams. "
+                "Write exclusively in English. Never use French or any other language."
+            ),
         )
         if reply and len(reply.strip()) > 10:
             return AskArchitectResponse(answer=reply.strip(), repo=req.repo, provider=meta.get("model_served") or "meterless")

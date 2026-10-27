@@ -39,12 +39,12 @@ ZETARIS_ORG = os.getenv("ZETARIS_ORG_ID", "1")
 ZETARIS_USER = os.getenv("ZETARIS_USERNAME", "")
 ZETARIS_PASS = os.getenv("ZETARIS_PASSWORD", "")
 
-# Zetaris embedded Postgres (mapped to localhost:32768)
-PG_HOST = "localhost"
-PG_PORT = 32768
-PG_DB   = "zetaris"          # Zetaris' internal postgres DB name (common default)
-PG_USER = "zetaris"          # common default
-PG_PASS = "zetaris"          # common default
+# Zetaris embedded Postgres (Docker publishes 127.0.0.1:32768->5432, not IPv6 ::1)
+PG_HOST = os.getenv("ZETARIS_PG_HOST", "127.0.0.1")
+PG_PORT = int(os.getenv("ZETARIS_PG_PORT", "32768"))
+PG_DB = os.getenv("ZETARIS_PG_DB", "metastore")
+PG_USER = os.getenv("ZETARIS_PG_USER", "zetaris")
+PG_PASS = os.getenv("ZETARIS_PG_PASSWORD", "")
 PG_SCHEMA = "archus"         # our dedicated schema
 
 TABLES_TO_SKIP = {"sqlite_sequence"}
@@ -105,13 +105,57 @@ except ImportError:
     log("psycopg2 not installed. Run: pip install psycopg2-binary", ok=False)
     sys.exit(1)
 
-# Try a few common user/db combinations for the Zetaris embedded postgres
-pg_candidates = [
+def _postgres_creds_from_docker():
+    """Read POSTGRES_* from the running zetaris-postgres-1 container. Never print the password."""
+    import json
+    import subprocess
+
+    try:
+        raw = subprocess.check_output(
+            ["docker", "inspect", "zetaris-postgres-1"],
+            text=True,
+            stderr=subprocess.DEVNULL,
+        )
+        env_list = json.loads(raw)[0]["Config"]["Env"]
+        env = {}
+        for item in env_list:
+            if "=" in item:
+                key, value = item.split("=", 1)
+                env[key] = value
+        return (
+            env.get("POSTGRES_USER") or "zetaris",
+            env.get("POSTGRES_PASSWORD") or "",
+            env.get("POSTGRES_DB") or "metastore",
+        )
+    except Exception:
+        return None
+
+
+docker_creds = _postgres_creds_from_docker()
+if docker_creds and docker_creds[1]:
+    log("Read Postgres credentials from container zetaris-postgres-1")
+else:
+    log("Could not read credentials from Docker inspect", ok=False)
+
+pg_candidates = []
+if PG_USER and PG_PASS:
+    pg_candidates.append((PG_USER, PG_PASS, PG_DB))
+if docker_creds and docker_creds[1]:
+    pg_candidates.append(docker_creds)
+pg_candidates.extend([
+    ("zetaris", "zetaris", "metastore"),
     ("zetaris", "zetaris", "zetaris"),
     ("postgres", "postgres", "postgres"),
-    ("zetaris", "password", "zetaris"),
-    ("admin", "admin", "zetaris"),
-]
+])
+# de-dupe while keeping order
+seen = set()
+unique_candidates = []
+for row in pg_candidates:
+    if row in seen:
+        continue
+    seen.add(row)
+    unique_candidates.append(row)
+pg_candidates = unique_candidates
 
 pg_conn = None
 for pg_user, pg_pass, pg_db in pg_candidates:
@@ -128,9 +172,9 @@ for pg_user, pg_pass, pg_db in pg_candidates:
         log(f"  Tried {pg_user}@{pg_db}: {str(e)[:60]}", ok=False)
 
 if pg_conn is None:
-    log("Could not connect to Zetaris Postgres with any known credentials.", ok=False)
-    log("Will try to use Zetaris Lightning layer (DDL via REST API) instead.")
-    USE_PG = False
+    log("Could not connect to Zetaris Postgres. Lightning REST DDL is not allowed on this API (400).", ok=False)
+    log("Fix: run this script where `docker inspect zetaris-postgres-1` works, host 127.0.0.1 port 32768.")
+    sys.exit(1)
 else:
     USE_PG = True
 
