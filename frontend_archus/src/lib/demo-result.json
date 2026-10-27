@@ -71,7 +71,67 @@
       "Decouple cross-module references using dependency inversion.",
       "Increase test coverage on uncovered edge-case branches before refactoring."
     ],
-    "summary": "Decision: REFACTOR for module 'accounts'. While the module has active test suites that safeguard behavioral regressions, specific structural smells (long methods or localized high coupling) are creating friction. Internal restructuring without external API change is recommended."
+    "summary": "Decision: REFACTOR for module 'accounts'. While the module has active test suites that safeguard behavioral regressions, specific structural smells (long methods or localized high coupling) are creating friction. Internal restructuring without external API change is recommended.",
+    "architecture_style": "Django (MVT)",
+    "detailed_explanation": "### 1. Executive Verdict & Core Architecture Diagnostics\nBased on independently verified static AST analysis and database metrics, Archus recommends a targeted **REFACTOR** for the repository.\nThe codebase demonstrates moderate architectural coupling (score: 3.8) and an average cyclomatic complexity of 4.2. Crucially, the test harness provides 68.5% coverage across active paths, meaning structural refactoring carries low regression risk.\n\n### 2. Structural Health & Anti-Pattern Analysis\nWhile no fatal God Classes were detected (0 found), localized complexity spikes (max complexity: 14.0 in `accounts/views.py`) and high-churn change hotspots (7 recorded bugfixes) indicate emerging architectural friction. Long parameter lists and mixed presentation-database logic are impeding velocity.\n\n### 3. Strategic Trade-Off Analysis\n- **Maintain (52.0/100)**: Incurring ongoing maintenance friction. As new features land, complexity in accounts/views.py will breach the critical threshold of 20.\n- **Refactor (67.4/100)**: Optimal path. Exploits existing test coverage to decouple domain operations with minimal blast radius.\n- **Migrate (17.7/100)**: Full rewrite or microservice extraction would introduce massive overhead without architectural justification.\n\n### 4. Phased Strategic Execution Roadmap\n- **Phase 1: Stabilization & Boundary Enforcement (Sprint 1)**: Freeze interfaces, add black-box tests for core authentication edge cases.\n- **Phase 2: Targeted Decoupling (Sprint 2)**: Extract business operations into dedicated domain services using dependency injection.\n- **Phase 3: Architecture Fitness Functions & CI Guardrails (Sprint 3)**: Institute linting rules capping function complexity at 10 and banning direct ORM queries from views.\n\n### 5. Risk Assessment & Operational Blast Radius\n- **Blast Radius**: Strictly internal to the accounts module. Public HTTP contracts remain unchanged.\n- **Regression Risk**: Low (<10%) guarded by existing 68.5% automated test coverage.",
+    "repo_metadata": {
+      "repo_name": "Django Sample Web App",
+      "language": "Python",
+      "architecture_pattern": "Django (MVT)",
+      "files_analyzed": 18,
+      "total_loc": 2430,
+      "total_functions": 70,
+      "total_classes": 10
+    },
+    "metrics_overview": {
+      "complexity_avg": 4.2,
+      "complexity_max": 14.0,
+      "coupling_score": 3.8,
+      "cohesion_score": 0.72,
+      "coverage_estimate": 68.5,
+      "god_class_count": 0,
+      "hotspot_fixes": 7,
+      "outdated_deps": 0
+    },
+    "antipatterns": [
+      {
+        "pattern": "long_method",
+        "file": "accounts/views.py",
+        "severity": "medium",
+        "value": 65.0,
+        "description": "Long Method: High complexity in request handler (65 lines/branches)."
+      },
+      {
+        "pattern": "long_params",
+        "file": "accounts/forms.py",
+        "severity": "low",
+        "value": 7.0,
+        "description": "Long Parameter List: 7 parameters passed to form validator."
+      }
+    ],
+    "complexity_hotspots": [
+      {
+        "file": "accounts/views.py",
+        "max_complexity": 14.0,
+        "num_functions": 12,
+        "num_lines": 340
+      },
+      {
+        "file": "accounts/services.py",
+        "max_complexity": 8.0,
+        "num_functions": 8,
+        "num_lines": 180
+      }
+    ],
+    "refactoring_recipes": [
+      {
+        "title": "Extract Domain Service from Monolithic View",
+        "pattern": "Extract Service / Single Responsibility",
+        "impact": "Reduces view complexity from 14.0 to <4.0 and enables direct unit testing.",
+        "before_snippet": "# accounts/views.py (Monolithic)\ndef register_user(request):\n    # mixes validation, password hashing, stripe signup, and email\n    ...",
+        "after_snippet": "# accounts/services.py (Decoupled)\nclass UserRegistrationService:\n    def __init__(self, mailer: MailPort, payment: PaymentPort):\n        ...\n    def register(self, dto: RegistrationDTO) -> User:\n        ..."
+      }
+    ]
   },
   "agents": [
     { "name": "PlannerAgent", "role": "Query Decomposition and Metric Retrieval Planning" },
