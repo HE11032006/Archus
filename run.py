@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.orchestration.graph import OrchestrationGraph
-from app.schemas import RunRequest, RunResponse
+from app.schemas import RunRequest, RunResponse, AskArchitectRequest, AskArchitectResponse
 from app.world_state import run_lineage
 from app.llm import llm_client
 
@@ -92,6 +92,67 @@ def run_endpoint(request: RunRequest):
         pass
 
     return response
+
+
+@app.get("/runs/{run_id}", response_model=RunResponse)
+def get_run_endpoint(run_id: str):
+    """
+    Retrieves a past analysis run by its unique run_id.
+    """
+    import json
+    run_file = settings.data_dir / "runs" / f"{run_id}.json"
+    if not run_file.exists():
+        raise HTTPException(status_code=404, detail=f"Run '{run_id}' not found")
+    try:
+        with open(run_file, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        return RunResponse.model_validate(data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to read run record: {e}")
+ 
+
+@app.post("/ask_architect", response_model=AskArchitectResponse)
+def ask_architect(req: AskArchitectRequest):
+    """
+    Interactive Q&A with the Archus Architecture Agent about a specific analyzed repository.
+    """
+    from app.repo_analyzer import get_cached_analysis
+    analysis = get_cached_analysis(req.repo) or {}
+
+    context = (
+        f"Target Repository: {req.repo} ({analysis.get('primary_language', 'software')})\n"
+        f"Architecture Style: {analysis.get('architecture_pattern', 'Modular Architecture')}\n"
+        f"Total Files Analyzed: {analysis.get('files_analyzed', 'N/A')}\n"
+        f"Average Cyclomatic Complexity: {analysis.get('avg_complexity', 'N/A')}\n"
+        f"Max Cyclomatic Complexity: {analysis.get('max_complexity', 'N/A')}\n"
+        f"Coupling Score: {analysis.get('coupling_score', 'N/A')}\n"
+        f"Decision Context: {req.decision or 'N/A'}\n"
+    )
+
+    prompt = (
+        f"{context}\n"
+        f"User Question: {req.question}\n\n"
+        "As an expert Senior Software Architect, provide a clear, technical, practical, and highly actionable response "
+        "with concrete architectural recommendations and code/structure advice."
+    )
+
+    if llm_client.is_available():
+        reply, meta = llm_client.generate_with_meta(
+            prompt,
+            system_prompt="You are Archus, an expert software architecture consulting agent assisting engineering teams.",
+        )
+        if reply and len(reply.strip()) > 10:
+            return AskArchitectResponse(answer=reply.strip(), repo=req.repo, provider=meta.get("model_served") or "meterless")
+
+    return AskArchitectResponse(
+        answer=(
+            f"Based on the metrics of {req.repo}, our primary recommendation is to enforce clean architectural boundaries. "
+            "Isolate core business logic behind domain interfaces, introduce characterization tests before refactoring, "
+            "and eliminate direct dependencies to external infrastructure components."
+        ),
+        repo=req.repo,
+        provider="rules"
+    )
 
 
 @app.get("/world/stats")
