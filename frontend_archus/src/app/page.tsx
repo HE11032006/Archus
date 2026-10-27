@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search } from "lucide-react";
+import { Search, AlertCircle } from "lucide-react";
 
 import { SiteFooter } from "@/components/site-footer";
 import { SiteHeader } from "@/components/site-header";
@@ -13,14 +13,44 @@ import { LiquidFillInput } from "@/components/ui/liquid-fill-input";
 export default function HomePage() {
   const router = useRouter();
   const [searchQuery, setSearchQuery] = useState("");
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  const validateRepo = (input: string): { valid: boolean; message?: string } => {
+    const val = input.trim();
+    if (!val) {
+      return {
+        valid: false,
+        message: "Enter a GitHub URL (e.g. https://github.com/owner/repo) or a project name.",
+      };
+    }
+    if (val.startsWith("http://") || val.startsWith("https://")) {
+      const isGithub = /github\.com\/[\w.-]+\/[\w.-]+/i.test(val);
+      if (!isGithub) {
+        return {
+          valid: false,
+          message: "Only public GitHub repositories are supported. Example: https://github.com/pallets/flask",
+        };
+      }
+      return { valid: true };
+    }
+    // Allow owner/repo, single identifier, or local sample
+    if (/^[\w.-]+(\/[\w.-]+)?$/.test(val)) {
+      return { valid: true };
+    }
+    return {
+      valid: false,
+      message: "Invalid format. Use 'owner/repo' or a full GitHub URL.",
+    };
+  };
 
   const goToAnalyze = () => {
-    const value = searchQuery.trim();
-    if (!value) {
-      router.push("/analyze");
+    const validation = validateRepo(searchQuery);
+    if (!validation.valid) {
+      setValidationError(validation.message || "Invalid input.");
       return;
     }
-    router.push(`/analyze?repo=${encodeURIComponent(value)}`);
+    setValidationError(null);
+    router.push(`/analyze?repo=${encodeURIComponent(searchQuery.trim())}`);
   };
 
   return (
@@ -34,7 +64,7 @@ export default function HomePage() {
             <p className="landing-hero-sub">
               A new perspective on architecture for the agentic era.
               <br />
-              Evidence-backed decisions   Maintain, Refactor, or Migrate.
+              Evidence-backed decisions — Maintain, Refactor, or Migrate.
             </p>
 
             <form
@@ -44,10 +74,17 @@ export default function HomePage() {
                 goToAnalyze();
               }}
             >
-              <div className="landing-search-pill">
+              <div
+                className={`landing-search-pill transition-all ${
+                  validationError ? "ring-2 ring-rose-500/60 border-rose-500/50" : ""
+                }`}
+              >
                 <LiquidFillInput
                   value={searchQuery}
-                  onChange={(event) => setSearchQuery(event.target.value)}
+                  onChange={(event) => {
+                    setSearchQuery(event.target.value);
+                    if (validationError) setValidationError(null);
+                  }}
                   placeholder="Find a repo or paste a GitHub URL"
                   aria-label="Repository to analyze"
                 />
@@ -55,6 +92,16 @@ export default function HomePage() {
                   <Search size={18} strokeWidth={2.2} />
                 </button>
               </div>
+
+              {validationError && (
+                <div
+                  role="alert"
+                  className="mt-3 flex items-center justify-center gap-2 rounded-xl border border-rose-500/30 bg-rose-500/10 px-4 py-2 text-xs font-medium text-rose-500 animate-in fade-in slide-in-from-top-1"
+                >
+                  <AlertCircle size={15} className="shrink-0" />
+                  <span>{validationError}</span>
+                </div>
+              )}
             </form>
           </div>
         </section>
