@@ -20,6 +20,7 @@ from ..agents.retriever import RetrieverAgent
 from ..agents.analyst import AnalystAgent
 from ..agents.evaluator import EvidenceEvaluatorAgent
 from ..agents.reporter import ReporterAgent
+from ..repo_analyzer import analyze_and_ingest_repo
 
 
 class OrchestrationGraph:
@@ -71,16 +72,26 @@ class OrchestrationGraph:
         if not settings.is_zetaris_configured():
             is_sample = True
 
+        # Ingest, clone if needed, and extract real AST metrics from the repository
+        try:
+            repo_analysis = analyze_and_ingest_repo(repo, module_path)
+            canonical_repo = repo_analysis.get("repo_id", repo)
+        except Exception as exc:
+            print(f"[WARN] Ingestion error on repo '{repo}': {exc}. Using fallback identifier.")
+            repo_analysis = None
+            canonical_repo = repo
+
         state = SharedState(
             run_id=run_id,
             trace_id=trace_id,
             query=query,
-            repo=repo,
+            repo=canonical_repo,
             module_path=module_path,
             sample_mode=is_sample,
             llm_provider=provider,
             llm_model=model,
-            max_revisions=settings.max_revision_cycles
+            max_revisions=settings.max_revision_cycles,
+            repo_analysis=repo_analysis
         )
 
         tracer.log(
@@ -91,15 +102,17 @@ class OrchestrationGraph:
                 "trace_id": trace_id,
                 "sample_mode": is_sample,
                 "query": query,
-                "repo": repo,
+                "raw_repo_input": repo,
+                "canonical_repo": canonical_repo,
                 "module": module_path,
+                "architecture_pattern": repo_analysis.get("architecture_pattern") if repo_analysis else None,
                 "llm_provider": provider or "default",
                 "llm_model": model or "default"
             }
         )
 
         query_executor = self._get_executor(is_sample)
-        world_state.record_run(self.world, run_id, query, repo, module_path, is_sample)
+        world_state.record_run(self.world, run_id, query, canonical_repo, module_path, is_sample)
 
         # Instantiate agents
         planner = PlannerAgent(tracer)
@@ -160,7 +173,7 @@ class OrchestrationGraph:
                 payload={"decision": state.final_output.decision if state.final_output else None}
             )
 
-            return RunResponse(
+            run_response = RunResponse(
                 run_id=run_id,
                 status=run_status,
                 output=state.final_output,
@@ -169,6 +182,17 @@ class OrchestrationGraph:
                 log_file=str(tracer.log_file_path),
                 execution_time_seconds=elapsed_sec
             )
+
+            # Persist run response to data/runs/<run_id>.json for direct retrieval and audits
+            try:
+                runs_dir = settings.data_dir / "runs"
+                runs_dir.mkdir(parents=True, exist_ok=True)
+                with open(runs_dir / f"{run_id}.json", "w", encoding="utf-8") as f:
+                    f.write(run_response.model_dump_json(indent=2))
+            except Exception as e:
+                print(f"[WARN] Failed to persist run {run_id} to disk: {e}")
+
+            return run_response
 
         except Exception as e:
             elapsed_sec = round(time.perf_counter() - start_time, 3)
