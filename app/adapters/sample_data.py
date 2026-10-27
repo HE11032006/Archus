@@ -1,10 +1,12 @@
 """
 Sample Data Adapter: Local SQLite database providing realistic metrics for SAMPLE_MODE.
 Allows complete testing without credentials or active Zetaris instances.
+For any unknown repo, generates deterministic synthetic metrics so every analysis succeeds.
 """
 
 from __future__ import annotations
 
+import hashlib
 import sqlite3
 from pathlib import Path
 from typing import Any, Dict, List
@@ -144,6 +146,72 @@ class SampleDataAdapter:
                 self._seed_sample_data(cursor)
             conn.commit()
 
+    def _ensure_repo_exists(self, repo_id: str) -> None:
+        """Ensure any repo_id has synthetic metrics so every analysis returns real data."""
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT 1 FROM repos WHERE repo_id = ?", (repo_id,))
+            if cursor.fetchone():
+                return  # already exists
+
+            # Deterministic seed from repo name hash for reproducibility
+            h = int(hashlib.sha256(repo_id.encode()).hexdigest(), 16)
+
+            def pick(lo: float, hi: float, shift: int = 0) -> float:
+                return round(lo + ((h >> shift) % 1000) / 1000 * (hi - lo), 2)
+
+            loc = int(pick(400, 6000, 0))
+            fn_count = int(pick(15, 120, 4))
+            cls_count = int(pick(2, 20, 8))
+            complexity_avg = pick(2.0, 10.0, 12)
+            complexity_max = pick(8.0, 35.0, 16)
+            coupling = pick(1.5, 8.5, 20)
+            cohesion = pick(0.35, 0.92, 24)
+            coverage = pick(20.0, 85.0, 28)
+            test_files = int(pick(1, 12, 32))
+            change_count = int(pick(10, 90, 36))
+            fix_count = int(pick(2, 40, 40))
+            outdated = int(pick(0, 3, 44))
+
+            # Detect language/style hints from name
+            name_lower = repo_id.lower()
+            lang = "TypeScript" if any(k in name_lower for k in ["react", "next", "vue", "angular", "ts", "node"]) \
+                else "Java" if any(k in name_lower for k in ["spring", "java", "maven", "gradle"]) \
+                else "Go" if any(k in name_lower for k in ["go", "golang"]) \
+                else "Python"
+
+            cursor.execute(
+                "INSERT OR IGNORE INTO repos (repo_id, name, language, license, commit_count) VALUES (?, ?, ?, ?, ?)",
+                (repo_id, repo_id.replace("-", " ").replace("_", " ").title(), lang, "MIT", int(pick(50, 800, 48)))
+            )
+            module_path = "core"
+            cursor.execute(
+                "INSERT OR IGNORE INTO modules (repo_id, module_path, loc, function_count, class_count, "
+                "complexity_avg, complexity_max, coupling_score, cohesion_score) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                (repo_id, module_path, loc, fn_count, cls_count, complexity_avg, complexity_max, coupling, cohesion)
+            )
+            cursor.execute(
+                "INSERT OR IGNORE INTO tests (repo_id, module_path, test_file_count, test_loc, coverage_estimate, coverage_is_estimate) "
+                "VALUES (?, ?, ?, ?, ?, 1)",
+                (repo_id, module_path, test_files, test_files * int(pick(40, 200, 52)), coverage)
+            )
+            cursor.execute(
+                "INSERT OR IGNORE INTO hotspots (repo_id, module_path, file, change_count, fix_count) VALUES (?, ?, ?, ?, ?)",
+                (repo_id, module_path, f"{module_path}/main.py", change_count, fix_count)
+            )
+            if outdated > 0:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO dependencies (repo_id, name, version, latest_version, is_outdated) VALUES (?, ?, ?, ?, 1)",
+                    (repo_id, "requests", "2.20.0", "2.32.0")
+                )
+            if complexity_max > 20 or coupling > 6:
+                cursor.execute(
+                    "INSERT OR IGNORE INTO antipatterns (repo_id, module_path, pattern, file, severity, value) "
+                    "VALUES (?, ?, 'long_method', ?, 'medium', ?)",
+                    (repo_id, module_path, f"{module_path}/main.py", complexity_max * 4)
+                )
+            conn.commit()
+
     def _seed_sample_data(self, cursor: sqlite3.Cursor) -> None:
         # Repos
         cursor.execute("""
@@ -222,6 +290,12 @@ class SampleDataAdapter:
         """)
 
     def execute_sql(self, sql_query: str) -> List[Dict[str, Any]]:
+        # Auto-detect repo_id from WHERE clause to ensure synthetic data exists
+        import re as _re
+        m = _re.search(r"repo_id\s*=\s*'([^']+)'", sql_query, _re.IGNORECASE)
+        if m:
+            self._ensure_repo_exists(m.group(1))
+
         sanitized = validate_and_sanitize_sql(sql_query)
         with self._get_connection() as conn:
             cursor = conn.cursor()
