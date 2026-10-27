@@ -23,40 +23,44 @@ const DEMO_PROJECTS = [
   },
 ];
 
+function getRepoParam(): string {
+  if (typeof window === "undefined") return "";
+  return new URLSearchParams(window.location.search).get("repo")?.trim() ?? "";
+}
+
 export default function AnalyzePage() {
   const router = useRouter();
   const started = useRef(false);
-  const [repo, setRepo] = useState("");
+  const [repo] = useState<string>(getRepoParam);
   const [currentStep, setCurrentStep] = useState(0);
   const [failed, setFailed] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     if (started.current) return;
-    const params = new URLSearchParams(window.location.search);
-    const repoParam = params.get("repo")?.trim();
-    if (!repoParam) {
+    if (!repo) {
       router.replace("/");
       return;
     }
     started.current = true;
-    setRepo(repoParam);
 
     const match = DEMO_PROJECTS.find(
-      (d) => d.repo.toLowerCase() === repoParam.toLowerCase()
+      (d) => d.repo.toLowerCase() === repo.toLowerCase()
     );
     const query =
       match?.query ??
-      `Evaluate architectural health, modularity, and refactoring risks for ${repoParam}`;
+      `Evaluate architectural health, modularity, and refactoring risks for ${repo}`;
 
-    const timers: number[] = [];
-    for (let i = 1; i <= 4; i++) {
-      timers.push(window.setTimeout(() => setCurrentStep(i), i * 1400));
-    }
+    const timers: number[] = [
+      window.setTimeout(() => setCurrentStep(1), 2500),
+      window.setTimeout(() => setCurrentStep(2), 5500),
+      window.setTimeout(() => setCurrentStep(3), 8500),
+      window.setTimeout(() => setCurrentStep(4), 12000),
+    ];
 
     runAnalysis({
-      input: { query, repo: repoParam },
-      options: { sample_mode: true },
+      input: { query, repo },
+      options: { sample_mode: false },
     })
       .then((result) => {
         timers.forEach((id) => window.clearTimeout(id));
@@ -75,19 +79,21 @@ export default function AnalyzePage() {
     return () => {
       timers.forEach((id) => window.clearTimeout(id));
     };
-  }, [router]);
+  }, [repo, router]);
 
   return (
-    <div className="landing scan-screen">
+    <div className="landing scan-screen min-h-svh flex flex-col">
       <SiteHeader solid />
-      <div className="px-8 pt-6">
+      <div className="px-6 pt-3 pb-1">
         <BackButton />
       </div>
 
-      <PipelineProgress currentStep={currentStep} failed={failed} repo={repo} />
+      <div className="flex flex-1 items-center justify-center">
+        <PipelineProgress currentStep={currentStep} failed={failed} repo={repo} />
+      </div>
 
       {error && (
-        <p className="mx-auto max-w-xl px-8 pb-16 text-center text-sm text-red-500">{error}</p>
+        <p className="mx-auto max-w-xl px-8 pb-6 text-center text-xs font-mono text-rose-500">{error}</p>
       )}
     </div>
   );
