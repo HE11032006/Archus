@@ -53,7 +53,7 @@ class Settings(BaseModel):
     )
 
     # Safety, Timeouts & Limits
-    sql_timeout_seconds: int = Field(default_factory=lambda: int(os.environ.get("SOURCE_TIMEOUT_SECONDS", "15")))
+    sql_timeout_seconds: int = Field(default_factory=lambda: int(os.environ.get("SOURCE_TIMEOUT_SECONDS", "3")))
     model_timeout_seconds: int = Field(default_factory=lambda: int(os.environ.get("MODEL_TIMEOUT_SECONDS", "60")))
     max_sql_limit: int = 1000
     default_sql_limit: int = 200
