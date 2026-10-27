@@ -18,20 +18,23 @@ function applyTheme(theme: Theme) {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = React.useState<Theme>("dark");
+  const [theme, setTheme] = React.useState<Theme>(() => {
+    if (typeof window !== "undefined") {
+      const stored = window.localStorage.getItem("archus-theme");
+      return stored === "light" ? "light" : "dark";
+    }
+    return "dark";
+  });
 
+  // Apply DOM side-effect whenever theme changes
   React.useEffect(() => {
-    const stored = window.localStorage.getItem("archus-theme");
-    const initial: Theme = stored === "light" ? "light" : "dark";
-    setTheme(initial);
-    applyTheme(initial);
-  }, []);
+    applyTheme(theme);
+  }, [theme]);
 
   const toggleTheme = React.useCallback(() => {
     setTheme((current) => {
       const next: Theme = current === "dark" ? "light" : "dark";
       window.localStorage.setItem("archus-theme", next);
-      applyTheme(next);
       return next;
     });
   }, []);
