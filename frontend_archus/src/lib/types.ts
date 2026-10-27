@@ -38,6 +38,50 @@ export interface AgentInfo {
   role: string;
 }
 
+export interface AntiPatternItem {
+  pattern: string;
+  file: string;
+  severity: "high" | "medium" | "low" | string;
+  value: number;
+  description?: string;
+}
+
+export interface ComplexityHotspot {
+  file: string;
+  max_complexity: number;
+  num_functions: number;
+  num_lines: number;
+}
+
+export interface RefactoringRecipe {
+  title: string;
+  pattern: string;
+  impact: string;
+  before_snippet: string;
+  after_snippet: string;
+}
+
+export interface RepoMetadata {
+  repo_name?: string;
+  language?: string;
+  architecture_pattern?: string;
+  files_analyzed?: number;
+  total_loc?: number;
+  total_functions?: number;
+  total_classes?: number;
+}
+
+export interface MetricsOverview {
+  complexity_avg?: number;
+  complexity_max?: number;
+  coupling_score?: number;
+  cohesion_score?: number;
+  coverage_estimate?: number;
+  god_class_count?: number;
+  hotspot_fixes?: number;
+  outdated_deps?: number;
+}
+
 export interface RunOutput {
   decision: "maintain" | "refactor" | "migrate" | "insufficient_evidence";
   confidence: number;
@@ -46,6 +90,13 @@ export interface RunOutput {
   missing_data: string[];
   action_plan: string[];
   summary: string;
+  detailed_explanation?: string;
+  architecture_style?: string;
+  repo_metadata?: RepoMetadata;
+  metrics_overview?: MetricsOverview;
+  antipatterns?: AntiPatternItem[];
+  complexity_hotspots?: ComplexityHotspot[];
+  refactoring_recipes?: RefactoringRecipe[];
 }
 
 export interface RunResponse {
