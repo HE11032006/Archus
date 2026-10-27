@@ -21,6 +21,30 @@ export async function runAnalysis(payload: RunRequest): Promise<RunResponse> {
   });
 }
 
+export async function getRun(runId: string): Promise<RunResponse> {
+  return apiFetch<RunResponse>(`/runs/${encodeURIComponent(runId)}`);
+}
+
 export async function getHealth(): Promise<HealthResponse> {
   return apiFetch<HealthResponse>("/health");
+}
+
+export interface AskArchitectRequest {
+  repo: string;
+  question: string;
+  decision?: string;
+  run_id?: string;
+}
+
+export interface AskArchitectResponse {
+  answer: string;
+  repo: string;
+  provider?: string;
+}
+
+export async function askArchitect(payload: AskArchitectRequest): Promise<AskArchitectResponse> {
+  return apiFetch<AskArchitectResponse>("/ask_architect", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
 }
