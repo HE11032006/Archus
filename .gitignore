@@ -11,4 +11,5 @@ data/provider_settings.json
 .DS_Store
 ArchX/
 .agents/
-
+data/repos/
+data/runs/
