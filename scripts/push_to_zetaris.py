@@ -77,7 +77,7 @@ def log(msg: str, ok: bool = True):
 
 # ── Step 1: Verify SQLite ─────────────────────────────────────────────────────
 print("=" * 60)
-print("STEP 1 — SQLite local")
+print("STEP 1   SQLite local")
 print("=" * 60)
 
 if not SQLITE_PATH.exists():
@@ -95,7 +95,7 @@ log(f"Found {len(all_tables)} tables: {all_tables}")
 # ── Step 2: Connect to Zetaris Postgres ───────────────────────────────────────
 print()
 print("=" * 60)
-print("STEP 2 — Connect to Zetaris embedded Postgres")
+print("STEP 2   Connect to Zetaris embedded Postgres")
 print("=" * 60)
 
 try:
@@ -139,7 +139,7 @@ else:
 if USE_PG:
     print()
     print("=" * 60)
-    print("STEP 3 — Push tables into Postgres (schema: archus)")
+    print("STEP 3   Push tables into Postgres (schema: archus)")
     print("=" * 60)
 
     pg_conn.autocommit = False
@@ -201,7 +201,7 @@ if USE_PG:
 else:
     print()
     print("=" * 60)
-    print("STEP 3 — Push via Zetaris Lightning layer (DDL + INSERT via REST)")
+    print("STEP 3   Push via Zetaris Lightning layer (DDL + INSERT via REST)")
     print("=" * 60)
 
     TYPE_MAP_LIGHTNING = {
@@ -257,7 +257,7 @@ else:
 # ── Step 4: Verify via Zetaris REST ──────────────────────────────────────────
 print()
 print("=" * 60)
-print("STEP 4 — Verify tables via Zetaris REST API")
+print("STEP 4   Verify tables via Zetaris REST API")
 print("=" * 60)
 
 verify_tables = ["modules", "antipatterns", "tests", "dependencies", "repos"]
@@ -269,7 +269,7 @@ for tbl in verify_tables:
         if r["status"] == 200:
             data = r["body"].get("data", [[0]])
             count = data[0][0] if data else "?"
-            log(f"  {ns}.{tbl}: {count} rows — VERIFIED")
+            log(f"  {ns}.{tbl}: {count} rows   VERIFIED")
             break
     else:
         log(f"  {tbl}: NOT ACCESSIBLE in Zetaris", ok=False)
