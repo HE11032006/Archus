@@ -4,11 +4,11 @@ status: draft
 ---
 <!-- `status` is the progress state every skill reads. Write `draft` when you first save this file,
      and change it to `approved` when the learner clearly approves the displayed plan ("looks good" counts).
-     Do not request a second sign-off. Never skip the draft save —
+     Do not request a second sign-off. Never skip the draft save  
      an unsaved draft dies with the conversation. -->
 
 <!-- Progress state for `5-build`. `5-build` reads this file to find the next
-     unchecked slice, and rewrites it as it goes — ticking boxes and appending to
+     unchecked slice, and rewrites it as it goes   ticking boxes and appending to
      Revisions. Every slice MUST carry the same fields in the same order so parsing
      stays reliable. `Learner check:` gives the learner a plain-language way to
      try the completed behavior in learn mode and at fast-mode checkpoints.
@@ -16,18 +16,18 @@ status: draft
 
      Internally, a slice is a thin end-to-end increment that makes a real part of the product
      usable, never a lone layer like "build the data model". Slice 1 includes project
-     bootstrapping — scaffold, dependencies, config — as part of delivering its first
+     bootstrapping   scaffold, dependencies, config   as part of delivering its first
      real behavior. The examples below show the format; replace them entirely. -->
 
 # Build Checklist
 
-Build mode: [learn or fast — record once chosen; carry forward on resume]
+Build mode: [learn or fast   record once chosen; carry forward on resume]
 
 ## Slices
 
 - [ ] **1. You can type an entry and see it appear in the list**
   Becomes usable: A running app where an entry typed into the form shows up on screen in the list. Nothing persists yet.
-  Why now: Proves the whole path end to end on the first slice — scaffold, form, state, render — so every later slice has somewhere to land.
+  Why now: Proves the whole path end to end on the first slice   scaffold, form, state, render   so every later slice has somewhere to land.
   PRD ref: `prd.md > The Core Journey` (steps 1-3)
   Spec ref: `spec.md > Components`, `spec.md > File Structure`
   Build: Scaffold the project per the spec's file structure, install dependencies, add the entry form and the in-memory entry list, render entries newest-first.
@@ -58,7 +58,7 @@ Build mode: [learn or fast — record once chosen; carry forward on resume]
      At each planned checkpoint, the learner tries the app and gives feedback.
      Check a box only after the learner reports back and issues are resolved. -->
 
-- [ ] Early usable behavior explored — [slice boundary, or shared final-review session for a tiny build]
+- [ ] Early usable behavior explored   [slice boundary, or shared final-review session for a tiny build]
 - [ ] Final kick-the-tires exploration and feedback completed
 
 ## Final Review
@@ -68,7 +68,7 @@ Build mode: [learn or fast — record once chosen; carry forward on resume]
      Complete the box below only after all agreed revisions are verified, committed,
      retried by the learner, and they explicitly confirm readiness. -->
 
-- [ ] Final review complete — feedback resolved and learner confirms ready to ship
+- [ ] Final review complete   feedback resolved and learner confirms ready to ship
 
 ## Code Tour and App Map
 
@@ -79,23 +79,23 @@ Build mode: [learn or fast — record once chosen; carry forward on resume]
      Keep personal reflection in the ignored profile, not this public record.
      Honor completed older code tours/maps; don't reopen them for new fields. -->
 
-- [ ] Learning activity complete — guided route, focused alternative, prior practice connected, or brief recap
-- [ ] Optional edit and transfer reflection addressed — offered/declined/already covered/not applicable as appropriate
+- [ ] Learning activity complete   guided route, focused alternative, prior practice connected, or brief recap
+- [ ] Optional edit and transfer reflection addressed   offered/declined/already covered/not applicable as appropriate
 - [ ] `devpost/app-map.html` generated from finished code, checked, and shown, including a project-grounded practice to reuse
 
 Activity and evidence: [what actually happened; real document/test/code references; unfinished work if interrupted]
 Route and stops: [actual paths and symbols; guided stops completed, or reference-only route]
 Edit outcome: [tried/kept/reverted/declined/not applicable; verification if changed]
-Reflection: [offered/answered/declined/already covered — personal answer belongs only in the ignored profile]
+Reflection: [offered/answered/declined/already covered   personal answer belongs only in the ignored profile]
 Activity mode: [live app and editor, explicit static fallback, focused alternative, prior practice, or recap]
 
 ## Revisions
 
-<!-- Leave this section empty when you write the checklist — no placeholder bullet.
+<!-- Leave this section empty when you write the checklist   no placeholder bullet.
      `5-build` appends a bullet here when implementation contradicts an assumption
      in the plan, in the form:
 
-       - [What changed] — [what the build discovered that made the original plan wrong].
+       - [What changed]   [what the build discovered that made the original plan wrong].
 
      One bullet per revision, no dates. This is how plan adaptation gets recorded,
      and it replaces any separate log. -->

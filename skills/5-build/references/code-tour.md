@@ -1,4 +1,4 @@
-# Learning Wrap-Up and App Map — Agent Reference
+# Learning Wrap-Up and App Map   Agent Reference
 
 One brief, useful connection between this project and a practice the learner can reuse. This happens after revisions in both build modes, before submission chores. Budget three to five minutes total, less when the relevant practice already happened. Not a quiz, another interview, or an extra product feature.
 
@@ -15,7 +15,7 @@ These are agent guidance, not a questionnaire or required categories. If a learn
 
 Say briefly why this example is useful. Suggest one activity tailored to them and let them redirect naturally. A person new to planning first gets the guided route by default; an experienced plan-first user can use the focused alternative. Coding seniority alone is not a reason to skip guidance.
 
-## Guided Route — Default for Newcomers
+## Guided Route   Default for Newcomers
 
 Prepare from the current implementation, not just the planned file tree. Choose one core action with a visible result and 2–3 meaningful code locations. These can be functions in the same file; never invent layers for a small app.
 
@@ -26,7 +26,7 @@ Prepare from the current implementation, not just the planned file tree. Choose 
 
 If the app/editor cannot run, use real source excerpts and explicitly call this a static walkthrough. Don't claim observed execution. Avoid setup detours. On interruption, record completed stops and resume there.
 
-## Focused Alternative — For Familiar Plan-First Users
+## Focused Alternative   For Familiar Plan-First Users
 
 Use one real uncertainty, change, or planning/verification decision instead of a redundant code tour. Keep it within the same time budget and existing scope. For example:
 
@@ -34,11 +34,11 @@ Use one real uncertainty, change, or planning/verification decision instead of a
 - Make a safe, small change and identify which existing check establishes that it worked.
 - Compare an original vague requirement with its agreed criterion, the corresponding implementation/test, and the observed outcome.
 
-Anchor the activity in actual document headings, code, tests, or results—not a generic engineering lecture. Invite one useful contribution (an observation, trying the change, or identifying what the evidence does and doesn't establish). Don't require a correct answer or make them invent an uncertainty. Explain/help directly when needed.
+Anchor the activity in actual document headings, code, tests, or results not a generic engineering lecture. Invite one useful contribution (an observation, trying the change, or identifying what the evidence does and doesn't establish). Don't require a correct answer or make them invent an uncertainty. Explain/help directly when needed.
 
 If this already happened during planning or build, cite that moment and move straight to the ending. Don't repeat the activity to satisfy a ritual. A learner who wants no extra exercise can use a brief evidence-based recap and the map; record that honestly as a recap, not hands-on practice. Prepare a simple code route for the map even when it was not toured interactively.
 
-## Shared Ending — A Takeaway, Not a Test
+## Shared Ending   A Takeaway, Not a Test
 
 Briefly connect **a real project decision or action → the evidence → a reusable practice**. For example, point to the actual acceptance criterion and test that exposed a mismatch, explaining that specifying an observable result made the problem easier to catch. Use this project's details, not canned praise or a claim of mastery.
 
