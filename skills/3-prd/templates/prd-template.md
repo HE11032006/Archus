@@ -4,24 +4,24 @@ status: draft
 ---
 <!-- `status` is the progress state every skill reads. Write `draft` when you first save this file,
      and change it to `approved` when the learner clearly approves the displayed plan ("looks good" counts).
-     Do not request a second sign-off. Never skip the draft save —
+     Do not request a second sign-off. Never skip the draft save  
      an unsaved draft dies with the conversation. -->
 
 <!-- This is the complete product definition: the scope sketch, filled in. Adapt it
      to the product. Drop any section that doesn't apply, and add sections this product
-     needs. Completeness is the standard, not length — a short PRD for a small product
+     needs. Completeness is the standard, not length   a short PRD for a small product
      is correct. Keep it inside the approved POC boundary.
 
      Keep heading names stable and descriptive: `4-spec` and `5-build` reference
      them by name. -->
 
-# [Project Name] — Product Requirements
+# [Project Name]   Product Requirements
 
 One line: what this is and who it's for, using the learner's chosen name.
 Source: `scope.md > [actual relevant heading]`. Cite scope headings alongside major requirements.
 
 ## The Core Journey
-The complete path, end to end — arrival, first use, the core loop, what counts as success.
+The complete path, end to end   arrival, first use, the core loop, what counts as success.
 Numbered steps in plain language, concrete enough that a stranger could follow along.
 This is the spine of the document; everything below elaborates on it.
 
@@ -48,11 +48,11 @@ What the user can do here, and what they see. Be specific about the things that 
 this product *this* product rather than a generic version of its category.
 
 <!-- OPTIONAL: user stories with acceptance criteria. Use them where they add precision
-     — multiple user types, several distinct capabilities, a journey with branches. Skip
+       multiple user types, several distinct capabilities, a journey with branches. Skip
      them for a single-user, single-surface tool and describe the behavior directly. -->
 
 - As a [specific person], I want [capability] so that [benefit].
-  - [ ] Acceptance criterion — verifiable through observable behavior or output
+  - [ ] Acceptance criterion   verifiable through observable behavior or output
   - [ ] Acceptance criterion
 
 ## States and Boundaries
@@ -63,7 +63,7 @@ this product *this* product rather than a generic version of its category.
      assumptions hidden inside the core interaction. A product that stores nothing
      gets no persistence entry. Do not list a state just to fill the section. -->
 
-- **[State]** — what the user sees and what happens.
+- **[State]**   what the user sees and what happens.
 
 ## Product Decisions
 
@@ -71,13 +71,13 @@ this product *this* product rather than a generic version of its category.
      Don't invent product choices to complete this template. Label any remaining
      assumption explicitly and resolve consequential gaps before approval. -->
 
-- [Learner's choice] — [their reason or tradeoff].
+- [Learner's choice]   [their reason or tradeoff].
 
 ## What We're Building
 Everything the proof of concept must do to be complete.
 
 ## Deferred From the POC
-Features this product implies but is not building now — the account system behind
+Features this product implies but is not building now   the account system behind
 "my saved items", the sharing behind "send it to a friend". Name each one and say why
 it's out for now, so none of them slip into the build unnoticed.
 

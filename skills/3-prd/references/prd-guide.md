@@ -1,4 +1,4 @@
-# PRD Guide — Agent Reference
+# PRD Guide   Agent Reference
 
 For the agent, not a theory lesson for the learner. Ask a thorough product interview in language calibrated to their coding experience. The learner supplies intentions and decisions; you organize and write the PRD afterward.
 
