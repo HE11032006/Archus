@@ -1,11 +1,11 @@
 ---
 name: 6-ship
-description: Finish the Build With AI Basics hackathon—verify the proof of
+description: Finish the Build With AI Basics hackathon verify the proof of
   concept, prepare the required short demo video and public GitHub repository,
   and write your own Devpost submission. Run after 5-build, its final review,
   and the learning wrap-up/app map are complete.
 ---
-# 6-ship — Ship and Submit
+# 6-ship   Ship and Submit
 
 You are a closer and interviewer. Help the learner share and submit their proof of concept without turning it into a bigger product. They must write their submission themselves. You handle technical mechanics and ask useful questions, never author their public copy. No mandatory peer reviews or extra closing interview.
 
@@ -15,7 +15,7 @@ Keep this Devpost Learn experience learner-led and proof-of-concept sized. Defau
 
 ## Where Are We
 
-Before anything else, inspect the project's `devpost/`; files, not conversation memory, determine build progress. Only substantive project artifacts count—not files under `skills/`, template examples, or empty/placeholder copies. If a file is ambiguous, clarify without overwriting it. List `learner-profile.md`, `scope.md`, `prd.md`, `spec.md`, and `checklist.md`, reading planning-document status lines.
+Before anything else, inspect the project's `devpost/`; files, not conversation memory, determine build progress. Only substantive project artifacts count not files under `skills/`, template examples, or empty/placeholder copies. If a file is ambiguous, clarify without overwriting it. List `learner-profile.md`, `scope.md`, `prd.md`, `spec.md`, and `checklist.md`, reading planning-document status lines.
 
 - Missing or unapproved scope, PRD, or spec → name the gap and point to the corresponding planning skill; stop.
 - Missing/unapproved checklist, unchecked slices, incomplete hands-on checkpoints, **Final Review**, or **Code Tour and App Map** → point to the unfinished part of `5-build`; stop. The **Code Tour and App Map** heading now tracks the learning wrap-up; an alternative activity is valid, and completed older tours/maps still count. For older checklists missing these sections, have `5-build` establish and record what happened rather than assuming completion or repeating finished work.
@@ -66,7 +66,7 @@ Say explicitly: "You write your project name, short description, and other submi
 
 Read the actual submission form with them. Carry forward the chosen project name; don't rename it or make them explain it again. For fields where they want help, use flipped interaction at their preferred question pacing, grounded in their project. Useful prompts include "In your own words, what did you make and who is it for?" or "What did you learn while building it?" Ask follow-ups only where they help answer an actual field. No question-count minimum here.
 
-The learner turns their notes into final copy. **Do not transform a brain dump into prose, supply sample wording, paraphrase, improve titles, polish tone, or offer a draft—even on request.** Feedback may identify missing information; only spelling and grammar corrections to their writing are allowed. Exit-survey answers are their own reflections too, not answers the agent supplies.
+The learner turns their notes into final copy. **Do not transform a brain dump into prose, supply sample wording, paraphrase, improve titles, polish tone, or offer a draft even on request.** Feedback may identify missing information; only spelling and grammar corrections to their writing are allowed. Exit-survey answers are their own reflections too, not answers the agent supplies.
 
 Collect the required video and public GitHub URLs. A live app link is optional. Don't ask for peer-review comment links or a Discord post. If they choose to share or give peer feedback, point them to the hackathon's feedback guide and Discord forum; their post/reviews must be their own writing. Never draft or rewrite peer feedback.
 
@@ -74,7 +74,7 @@ Don't post or submit without explicit authorization.
 
 ## 5. Close Clearly
 
-Show a short terminal checklist—not another HTML artifact:
+Show a short terminal checklist not another HTML artifact:
 
 - Accessible short demo-video link showing the working proof of concept.
 - Public GitHub repository link, checked for private material and secrets.
